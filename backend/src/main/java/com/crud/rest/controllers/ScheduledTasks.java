@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
+import com.crud.rest.service.SuiteExecutionServiceImpl.TestResultType;
 
 @Component
 public class ScheduledTasks {
@@ -32,11 +33,12 @@ public class ScheduledTasks {
 		// log.info("The time is now {}", dateFormat.format(new Date()));
 		System.out.println("The time is now " + dateFormat.format(new Date()));
 
-		// Ensure nothing is running currently. Mark is_running = false for all
-		// suites
+		// Ensure nothing is running currently.
 
 		// Update the last_execution_time for all enabled suite, also update the
 		// next_execution_time and is_running
+		
+		//Get fitnesse username and password externally
 
 		List<FitnesseSuite> fitnesseSuites = fitnesseSuiteService.findAllSuites();
 		fitnesseSuites.removeIf(eachSuite -> eachSuite.getShouldRun() == false);
@@ -44,6 +46,11 @@ public class ScheduledTasks {
 		for (FitnesseSuite fitnesseSuite : fitnesseSuites) {
 			fitnesseSuiteService.markTestRunning(fitnesseSuite, true);
 			suiteExecutionService.executeSuite(fitnesseSuite.getSuiteId(), fitnesseSuite.getSuiteUrl(), null, null);
+			int passedTests = suiteExecutionService.getTestCaseCount(fitnesseSuite.getSuiteId(), TestResultType.Passed);
+			int failedTests = suiteExecutionService.getTestCaseCount(fitnesseSuite.getSuiteId(), TestResultType.Failed);
+			fitnesseSuite.setPassedTests(passedTests);
+			fitnesseSuite.setFailedTests(failedTests);
+			fitnesseSuite.setTotalTests(passedTests + failedTests);
 			fitnesseSuiteService.markTestRunning(fitnesseSuite, false);
 		}
 		System.out.println("Processing done...");

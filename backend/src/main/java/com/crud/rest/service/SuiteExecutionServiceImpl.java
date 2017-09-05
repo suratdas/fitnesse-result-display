@@ -24,9 +24,14 @@ import org.xml.sax.SAXException;
 import com.crud.rest.dao.TestCaseResultDao;
 import com.crud.rest.dao.TestCaseResultsDaoImpl.DeleteType;
 import com.crud.rest.model.AllTestResult;
+import com.crud.rest.service.SuiteExecutionServiceImpl.TestResultType;
 
 @Service
 public class SuiteExecutionServiceImpl {
+
+	public enum TestResultType {
+		Passed, Failed
+	}
 
 	@Autowired
 	private TestCaseResultDao testCaseResultDao;
@@ -36,15 +41,14 @@ public class SuiteExecutionServiceImpl {
 		runFitnesseSuite(suiteId, suiteURL, fitnesseUsername, fitnessePassword);
 		testCaseResultDao.deleteTestCaseResults(suiteId, DeleteType.UnusedTestCases);
 	}
-	
-	public void deleteAllResults(int suiteId){
+
+	public void deleteAllResults(int suiteId) {
 		testCaseResultDao.deleteTestCaseResults(suiteId, DeleteType.AllForThisSuite);
 	}
-	
-	public void deleteAllResults() {
-		testCaseResultDao.deleteTestCaseResults(0, DeleteType.All);		
-	}
 
+	public void deleteAllResults() {
+		testCaseResultDao.deleteTestCaseResults(0, DeleteType.All);
+	}
 
 	private void runFitnesseSuite(int suiteId, String fitnessesuiteURL, String fitnesseUsername,
 			String fitnessePassword) {
@@ -130,5 +134,12 @@ public class SuiteExecutionServiceImpl {
 		}
 	}
 
+	public int getTestCaseCount(int suiteId, TestResultType type) {
+		if (type == TestResultType.Passed)
+			return testCaseResultDao.findTestCases(suiteId, "PASSED");
+		else if (type == TestResultType.Failed)
+			return testCaseResultDao.findTestCases(suiteId, "FAILED");
+		return 0;
+	}
 
 }

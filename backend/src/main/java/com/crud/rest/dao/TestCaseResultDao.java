@@ -15,4 +15,6 @@ public interface TestCaseResultDao {
 
 	void deleteTestCaseResults(int suiteId, DeleteType deleteType);
 
+	int findTestCases(int suiteId, String string);
+
 }

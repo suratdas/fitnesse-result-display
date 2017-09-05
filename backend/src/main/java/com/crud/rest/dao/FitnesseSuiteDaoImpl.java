@@ -27,7 +27,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Transaction transaction = session.beginTransaction();
 		FitnesseSuite fitnesse = new FitnesseSuite();
 		// It is not mandatory to specify fully qualified class name
-		String queryString = "from com.crud.rest.model.FitnesseSuites where suiteId = ?";
+		String queryString = "from com.crud.rest.model.FitnesseSuite where suiteId = ?";
 		try {
 			Query query = session.createQuery(queryString);
 			query.setParameter(0, Integer.parseInt(id));
@@ -61,7 +61,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		FitnesseSuite fitnesse = new FitnesseSuite();
-		String hql = "from com.crud.rest.model.FitnesseSuites where suiteName = ?";
+		String hql = "from com.crud.rest.model.FitnesseSuite where suiteName = ?";
 		try {
 			Query query = session.createQuery(hql);
 			query.setParameter(0, name);
@@ -112,7 +112,6 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		try {
 			suite = (FitnesseSuite) session.get(FitnesseSuite.class, id);
 			session.delete(suite);
-			// TODO delete all the results as well
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {
@@ -135,7 +134,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		 */
 
 		// Example of calling using hibernate query
-		suites = session.createQuery("from FitnesseSuites").list();
+		suites = session.createQuery("from FitnesseSuite").list();
 
 		return suites;
 	}
@@ -144,7 +143,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
-			session.createQuery("delete from FitnesseSuites").executeUpdate();
+			session.createQuery("delete from FitnesseSuite").executeUpdate();
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {

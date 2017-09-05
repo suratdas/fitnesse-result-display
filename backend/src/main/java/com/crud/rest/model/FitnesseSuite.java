@@ -36,14 +36,13 @@ public class FitnesseSuite {
 	private boolean isRunning;
 	
 	@Column(name="total_tests")
-	private Date totalTests;
+	private int totalTests;
 
 	@Column(name="passed_tests")
-	private Date passedTests;
+	private int passedTests;
 
 	@Column(name="failed_tests")
-	private Date failedTests;
-
+	private int failedTests;
 	
 	@Column(name="last_execution_time")
 	private Date lastExecutionTime;
@@ -92,27 +91,27 @@ public class FitnesseSuite {
 		this.isRunning = isRunning;
 	}
 	
-	public Date getTotalTests() {
+	public int getTotalTests() {
 		return totalTests;
 	}
 
-	public void setTotalTests(Date totalTests) {
+	public void setTotalTests(int totalTests) {
 		this.totalTests = totalTests;
 	}
 
-	public Date getPassedTests() {
+	public int getPassedTests() {
 		return passedTests;
 	}
 
-	public void setPassedTests(Date passedTests) {
+	public void setPassedTests(int passedTests) {
 		this.passedTests = passedTests;
 	}
 
-	public Date getFailedTests() {
+	public int getFailedTests() {
 		return failedTests;
 	}
 
-	public void setFailedTests(Date failedTests) {
+	public void setFailedTests(int failedTests) {
 		this.failedTests = failedTests;
 	}
 
@@ -135,7 +134,7 @@ public class FitnesseSuite {
 
 	// constructor with fields
 	public FitnesseSuite(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning,
-			Date totalTests, Date passedTests, Date failedTests, Date lastExecutionTime, Date nextExecutionTime) {
+			int totalTests, int passedTests, int failedTests, Date lastExecutionTime, Date nextExecutionTime) {
 		super();
 		this.suiteId = suiteId;
 		this.suiteName = suiteName;

@@ -125,4 +125,22 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 		}
 	}
 
+	@Override
+	public int findTestCases(int suiteId, String status) {
+		Session session = sessionFactory.openSession();
+		Transaction transaction = session.beginTransaction();
+		try {
+			Criteria criteria = session.createCriteria(AllTestResult.class)
+					.add(Restrictions.and(Restrictions.eq("suiteId", suiteId), Restrictions.eq("status", status)));
+			transaction.commit();
+			int valueToReturn = criteria.list().size();
+			session.close();
+			return valueToReturn;
+		} catch (Exception e) {
+			transaction.rollback();
+			session.close();
+		}
+		return 0;
+	}
+
 }
