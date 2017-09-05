@@ -18,15 +18,19 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.service.FitnesseSuiteService;
+import com.crud.rest.service.SuiteExecutionServiceImpl;
 
 @RestController // combination of @Controller and @ResponseBody annotations
 @RequestMapping("fitnesse")
-public class FitnesseSuiteController {
+public class SuiteController {
 
 	@Autowired
 	@Qualifier("fitnesseSuiteServiceImpl")
 	// @Qualifier("duplicateServiceImpl")
 	private FitnesseSuiteService fitnesseService;
+
+	@Autowired
+	private SuiteExecutionServiceImpl suiteExecutionServiceImpl;
 
 	/*
 	 * public void setFitnesseService(FitnesseSuiteService fitnesseService) {
@@ -95,13 +99,17 @@ public class FitnesseSuiteController {
 		}
 
 		fitnesseService.deleteSuiteById(id);
+		suiteExecutionServiceImpl.deleteAllResults(id);
 		return new ResponseEntity<FitnesseSuite>(HttpStatus.NO_CONTENT);
 	}
 
+	// This is risky as it deletes everything from database.
 	@RequestMapping(value = "/suite/deleteAll", method = RequestMethod.DELETE)
 	public ResponseEntity<FitnesseSuite> deleteAllSuites() {
 
 		fitnesseService.deleteAllSuites();
+		suiteExecutionServiceImpl.deleteAllResults();
 		return new ResponseEntity<FitnesseSuite>(HttpStatus.NO_CONTENT);
 	}
+
 }

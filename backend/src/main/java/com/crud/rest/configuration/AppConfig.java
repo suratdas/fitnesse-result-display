@@ -12,13 +12,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate4.HibernateTransactionManager;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import com.crud.rest.model.AllTestResult;
 import com.crud.rest.model.FitnesseSuite;
 
 @Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = "com.crud.rest.")
+@EnableScheduling
 public class AppConfig {
 	// @Bean configurations go here...
 	@Bean(name = "dataSource")
@@ -27,7 +30,7 @@ public class AppConfig {
 		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
 		dataSource.setUrl("jdbc:mysql://localhost:3306/fitnesse_result?useSSL=false");
 		dataSource.setUsername("root");
-		dataSource.setPassword("L@ter@321");
+		dataSource.setPassword("root");
 
 		return dataSource;
 	}
@@ -38,7 +41,7 @@ public class AppConfig {
 
 		LocalSessionFactoryBuilder sessionBuilder = new LocalSessionFactoryBuilder(dataSource);
 
-		sessionBuilder.addAnnotatedClasses(FitnesseSuite.class);
+		sessionBuilder.addAnnotatedClasses(FitnesseSuite.class, AllTestResult.class);
 		sessionBuilder.addProperties(getHibernateProperties());
 
 		return sessionBuilder.buildSessionFactory();

@@ -1,5 +1,7 @@
 package com.crud.rest.model;
 
+import java.sql.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -29,6 +31,25 @@ public class FitnesseSuite {
 
 	@Column(name = "should_run")
 	private boolean shouldRun;
+
+	@Column(name = "is_running")
+	private boolean isRunning;
+	
+	@Column(name="total_tests")
+	private Date totalTests;
+
+	@Column(name="passed_tests")
+	private Date passedTests;
+
+	@Column(name="failed_tests")
+	private Date failedTests;
+
+	
+	@Column(name="last_execution_time")
+	private Date lastExecutionTime;
+
+	@Column(name="next_execution_time")
+	private Date nextExecutionTime;
 
 	// setters and getters
 	public int getSuiteId() {
@@ -63,14 +84,79 @@ public class FitnesseSuite {
 		this.shouldRun = shouldRun;
 	}
 
+	public boolean isRunning() {
+		return isRunning;
+	}
+
+	public void setRunning(boolean isRunning) {
+		this.isRunning = isRunning;
+	}
+	
+	public Date getTotalTests() {
+		return totalTests;
+	}
+
+	public void setTotalTests(Date totalTests) {
+		this.totalTests = totalTests;
+	}
+
+	public Date getPassedTests() {
+		return passedTests;
+	}
+
+	public void setPassedTests(Date passedTests) {
+		this.passedTests = passedTests;
+	}
+
+	public Date getFailedTests() {
+		return failedTests;
+	}
+
+	public void setFailedTests(Date failedTests) {
+		this.failedTests = failedTests;
+	}
+
+	public Date getLastExecutionTime() {
+		return lastExecutionTime;
+	}
+
+	public void setLastExecutionTime(Date lastExecutionTime) {
+		this.lastExecutionTime = lastExecutionTime;
+	}
+
+	public Date getNextExecutionTime() {
+		return nextExecutionTime;
+	}
+
+	public void setNextExecutionTime(Date nextExecutionTime) {
+		this.nextExecutionTime = nextExecutionTime;
+	}
+	
+
 	// constructor with fields
-	public FitnesseSuite(int suiteId, String suiteName, String suiteUrl, boolean shouldRun) {
+	public FitnesseSuite(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning,
+			Date totalTests, Date passedTests, Date failedTests, Date lastExecutionTime, Date nextExecutionTime) {
 		super();
 		this.suiteId = suiteId;
 		this.suiteName = suiteName;
 		this.suiteUrl = suiteUrl;
 		this.shouldRun = shouldRun;
+		this.isRunning = isRunning;
+		this.totalTests = totalTests;
+		this.passedTests = passedTests;
+		this.failedTests = failedTests;
+		this.lastExecutionTime = lastExecutionTime;
+		this.nextExecutionTime = nextExecutionTime;
 	}
+
+	/*public FitnesseSuites(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning) {
+		super();
+		this.suiteId = suiteId;
+		this.suiteName = suiteName;
+		this.suiteUrl = suiteUrl;
+		this.shouldRun = shouldRun;
+		this.isRunning = isRunning;
+	}*/
 
 	// constructor without fields
 	public FitnesseSuite() {

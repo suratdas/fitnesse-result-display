@@ -27,7 +27,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Transaction transaction = session.beginTransaction();
 		FitnesseSuite fitnesse = new FitnesseSuite();
 		// It is not mandatory to specify fully qualified class name
-		String queryString = "from com.crud.rest.model.FitnesseSuite where suiteId = ?";
+		String queryString = "from com.crud.rest.model.FitnesseSuites where suiteId = ?";
 		try {
 			Query query = session.createQuery(queryString);
 			query.setParameter(0, Integer.parseInt(id));
@@ -61,7 +61,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		FitnesseSuite fitnesse = new FitnesseSuite();
-		String hql = "from com.crud.rest.model.FitnesseSuite where suiteName = ?";
+		String hql = "from com.crud.rest.model.FitnesseSuites where suiteName = ?";
 		try {
 			Query query = session.createQuery(hql);
 			query.setParameter(0, name);
@@ -112,6 +112,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		try {
 			suite = (FitnesseSuite) session.get(FitnesseSuite.class, id);
 			session.delete(suite);
+			// TODO delete all the results as well
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {
@@ -126,18 +127,16 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		List<FitnesseSuite> suites = new ArrayList<FitnesseSuite>();
 		Session session = sessionFactory.openSession();
 		// Session session = sessionFactory.getCurrentSession();
-		
-		//Example of calling a stored procedure
-		/*Query query = session.createSQLQuery(
-				"CALL getAllSuites()")
-				.addEntity(FitnesseSuite.class);
-		suites = query.list();
-		*/
-		
-		//Example of calling using hibernate query
-		suites = session.createQuery("from FitnesseSuite").list();
-		
-		
+
+		// Example of calling a stored procedure
+		/*
+		 * Query query = session.createSQLQuery( "CALL getAllSuites()")
+		 * .addEntity(FitnesseSuite.class); suites = query.list();
+		 */
+
+		// Example of calling using hibernate query
+		suites = session.createQuery("from FitnesseSuites").list();
+
 		return suites;
 	}
 
@@ -145,7 +144,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
-			session.createQuery("delete from FitnesseSuite").executeUpdate();
+			session.createQuery("delete from FitnesseSuites").executeUpdate();
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {
@@ -157,4 +156,20 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 	public boolean isSuiteExist(FitnesseSuite result) {
 		return findBySuiteName(result.getSuiteName()) != null;
 	}
+
+	@Override
+	public void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning) {
+		fitnesseSuite.setRunning(isRunning);
+		Session session = sessionFactory.openSession();
+		Transaction transaction = session.beginTransaction();
+		try {
+			session.update(fitnesseSuite);
+			transaction.commit();
+			session.close();
+		} catch (Exception e) {
+			transaction.rollback();
+			session.close();
+		}
+	}
+
 }

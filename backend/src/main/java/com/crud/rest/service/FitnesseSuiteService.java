@@ -23,4 +23,6 @@ public interface FitnesseSuiteService {
 	boolean isSuiteExist(FitnesseSuite Customer);
 
 	FitnesseSuite findBySuiteId(String id);
+
+	void markTestRunning(FitnesseSuite fitnesseSuite, boolean isRunning);
 }

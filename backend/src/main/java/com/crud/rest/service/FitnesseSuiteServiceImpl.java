@@ -13,11 +13,11 @@ public class FitnesseSuiteServiceImpl implements FitnesseSuiteService {
 
 	@Autowired
 	private FitnesseSuiteDao fitnesseDao;
-	
+
 	/*
-	public void setFitnesseDao(FitnesseSuiteDao fitnesseDao) {
-		this.fitnesseDao = fitnesseDao;
-	}*/
+	 * public void setFitnesseDao(FitnesseSuiteDao fitnesseDao) {
+	 * this.fitnesseDao = fitnesseDao; }
+	 */
 
 	@Override
 	public FitnesseSuite findById(long id) {
@@ -62,6 +62,11 @@ public class FitnesseSuiteServiceImpl implements FitnesseSuiteService {
 	@Override
 	public boolean isSuiteExist(FitnesseSuite fitnesseSuite) {
 		return fitnesseDao.isSuiteExist(fitnesseSuite);
+	}
+
+	@Override
+	public void markTestRunning(FitnesseSuite fitnesseSuite, boolean isRunning) {
+		fitnesseDao.markTestRunningStatus(fitnesseSuite, isRunning);
 	}
 
 }

@@ -23,4 +23,6 @@ public interface FitnesseSuiteDao {
 	boolean isSuiteExist(FitnesseSuite Customer);
 
 	FitnesseSuite findById(long id);
+
+	void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning);
 }
