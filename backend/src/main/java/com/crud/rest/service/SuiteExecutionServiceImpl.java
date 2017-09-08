@@ -22,9 +22,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.crud.rest.dao.TestCaseResultDao;
-import com.crud.rest.dao.TestCaseResultsDaoImpl.DeleteType;
 import com.crud.rest.model.AllTestResult;
-import com.crud.rest.service.SuiteExecutionServiceImpl.TestResultType;
 
 @Service
 public class SuiteExecutionServiceImpl {
@@ -37,17 +35,17 @@ public class SuiteExecutionServiceImpl {
 	private TestCaseResultDao testCaseResultDao;
 
 	public void executeSuite(int suiteId, String suiteURL, String fitnesseUsername, String fitnessePassword) {
-		testCaseResultDao.clearAllTestResult(suiteId);
+		testCaseResultDao.clearPreviousTestResultsForSuite(suiteId);
 		runFitnesseSuite(suiteId, suiteURL, fitnesseUsername, fitnessePassword);
-		testCaseResultDao.deleteTestCaseResults(suiteId, DeleteType.UnusedTestCases);
+		testCaseResultDao.deleteUnusedTestResults(suiteId);
 	}
 
 	public void deleteAllResults(int suiteId) {
-		testCaseResultDao.deleteTestCaseResults(suiteId, DeleteType.AllForThisSuite);
+		testCaseResultDao.deleteResultsForSuite(suiteId);
 	}
 
 	public void deleteAllResults() {
-		testCaseResultDao.deleteTestCaseResults(0, DeleteType.All);
+		testCaseResultDao.deleteAllResults();
 	}
 
 	private void runFitnesseSuite(int suiteId, String fitnessesuiteURL, String fitnesseUsername,
@@ -134,11 +132,19 @@ public class SuiteExecutionServiceImpl {
 		}
 	}
 
-	public int getTestCaseCount(int suiteId, TestResultType type) {
+	public int getFailedTestCaseCount(int suiteId) {
+		return getTestCaseCount(suiteId, TestResultType.Failed);
+	}
+
+	public int getPassedTestCaseCount(int suiteId) {
+		return getTestCaseCount(suiteId, TestResultType.Passed);
+	}
+
+	private int getTestCaseCount(int suiteId, TestResultType type) {
 		if (type == TestResultType.Passed)
-			return testCaseResultDao.findTestCases(suiteId, "PASSED");
+			return testCaseResultDao.getTestCaseCount(suiteId, "PASSED");
 		else if (type == TestResultType.Failed)
-			return testCaseResultDao.findTestCases(suiteId, "FAILED");
+			return testCaseResultDao.getTestCaseCount(suiteId, "FAILED");
 		return 0;
 	}
 

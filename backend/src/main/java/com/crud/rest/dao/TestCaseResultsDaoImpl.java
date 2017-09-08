@@ -25,17 +25,21 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 	private SessionFactory sessionFactory;
 
 	@Override
-	public void updateTestCaseResult(AllTestResult fitnesseTestCaseResult) {
+	public int getTestCaseCount(int suiteId, String status) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
-			session.update(fitnesseTestCaseResult);
+			Criteria criteria = session.createCriteria(AllTestResult.class)
+					.add(Restrictions.and(Restrictions.eq("suiteId", suiteId), Restrictions.eq("status", status)));
 			transaction.commit();
+			int valueToReturn = criteria.list().size();
 			session.close();
+			return valueToReturn;
 		} catch (Exception e) {
 			transaction.rollback();
 			session.close();
 		}
+		return 0;
 	}
 
 	@Override
@@ -65,7 +69,7 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 	}
 
 	@Override
-	public void createTestCaseResult(AllTestResult fitnesseTestCaseResult) {
+	public synchronized void createTestCaseResult(AllTestResult fitnesseTestCaseResult) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
@@ -78,7 +82,21 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 	}
 
 	@Override
-	public void clearAllTestResult(int suiteId) {
+	public synchronized void updateTestCaseResult(AllTestResult fitnesseTestCaseResult) {
+		Session session = sessionFactory.openSession();
+		Transaction transaction = session.beginTransaction();
+		try {
+			session.update(fitnesseTestCaseResult);
+			transaction.commit();
+			session.close();
+		} catch (Exception e) {
+			transaction.rollback();
+			session.close();
+		}
+	}
+
+	@Override
+	public void clearPreviousTestResultsForSuite(int suiteId) {
 		Session session = sessionFactory.openSession();
 		try {
 			String queryString = "update AllTestResult a set a.status='' where suiteId='" + suiteId + "'";
@@ -91,7 +109,21 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 	}
 
 	@Override
-	public void deleteTestCaseResults(int suiteId, DeleteType deleteType) {
+	public void deleteUnusedTestResults(int suiteId) {
+		deleteResults(suiteId, DeleteType.UnusedTestCases);
+	}
+
+	@Override
+	public void deleteAllResults() {
+		deleteResults(0, DeleteType.All);
+	}
+
+	@Override
+	public void deleteResultsForSuite(int suiteId) {
+		deleteResults(suiteId, DeleteType.AllForThisSuite);
+	}
+
+	private void deleteResults(int suiteId, DeleteType deleteType) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
@@ -109,11 +141,12 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 				session.close();
 				return;
 			}
+
+			// If there is nothing to delete, then return
 			Iterator<?> iterator = criteria.list().iterator();
 			if (!iterator.hasNext())
 				return;
 
-			// Delete any unused test result
 			while (iterator.hasNext())
 				session.delete(iterator.next());
 
@@ -123,24 +156,6 @@ public class TestCaseResultsDaoImpl implements TestCaseResultDao {
 			transaction.rollback();
 			session.close();
 		}
-	}
-
-	@Override
-	public int findTestCases(int suiteId, String status) {
-		Session session = sessionFactory.openSession();
-		Transaction transaction = session.beginTransaction();
-		try {
-			Criteria criteria = session.createCriteria(AllTestResult.class)
-					.add(Restrictions.and(Restrictions.eq("suiteId", suiteId), Restrictions.eq("status", status)));
-			transaction.commit();
-			int valueToReturn = criteria.list().size();
-			session.close();
-			return valueToReturn;
-		} catch (Exception e) {
-			transaction.rollback();
-			session.close();
-		}
-		return 0;
 	}
 
 }

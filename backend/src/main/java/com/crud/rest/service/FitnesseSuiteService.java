@@ -24,5 +24,5 @@ public interface FitnesseSuiteService {
 
 	FitnesseSuite findBySuiteId(String id);
 
-	void markTestRunning(FitnesseSuite fitnesseSuite, boolean isRunning);
+	void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning);
 }

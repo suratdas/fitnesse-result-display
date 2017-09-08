@@ -1,6 +1,5 @@
 package com.crud.rest.dao;
 
-import com.crud.rest.dao.TestCaseResultsDaoImpl.DeleteType;
 import com.crud.rest.model.AllTestResult;
 
 public interface TestCaseResultDao {
@@ -11,10 +10,14 @@ public interface TestCaseResultDao {
 
 	void createTestCaseResult(AllTestResult fitnesseTestCaseResult);
 
-	void clearAllTestResult(int suiteId);
+	void clearPreviousTestResultsForSuite(int suiteId);
 
-	void deleteTestCaseResults(int suiteId, DeleteType deleteType);
+	int getTestCaseCount(int suiteId, String string);
 
-	int findTestCases(int suiteId, String string);
+	void deleteAllResults();
+
+	void deleteResultsForSuite(int suiteId);
+
+	void deleteUnusedTestResults(int suiteId);
 
 }
