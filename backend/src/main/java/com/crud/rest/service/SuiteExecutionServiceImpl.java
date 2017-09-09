@@ -22,7 +22,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.crud.rest.dao.TestCaseResultDao;
+import com.crud.rest.dao.TestExecutionSettingsDao;
 import com.crud.rest.model.AllTestResult;
+import com.crud.rest.model.TestExecutionSettings;
 
 @Service
 public class SuiteExecutionServiceImpl {
@@ -33,6 +35,9 @@ public class SuiteExecutionServiceImpl {
 
 	@Autowired
 	private TestCaseResultDao testCaseResultDao;
+
+	@Autowired
+	private TestExecutionSettingsDao testExecutionSettingsDao;
 
 	public void executeSuite(int suiteId, String suiteURL, String fitnesseUsername, String fitnessePassword) {
 		testCaseResultDao.clearPreviousTestResultsForSuite(suiteId);
@@ -62,8 +67,7 @@ public class SuiteExecutionServiceImpl {
 				con.setRequestProperty("Authorization", "Basic " + authStringEnc);
 			}
 			con.setReadTimeout(43200000);
-			// TODO Find out if it is possible to add result to database when
-			// the execution is on.
+			// TODO Find out if it is possible to add result to database when the execution is on.
 			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 			String inputLine;
 			String oneResultNode = "";
@@ -97,8 +101,7 @@ public class SuiteExecutionServiceImpl {
 			NodeList nodeNames = doc.getElementsByTagName("relativePageName");
 			Node node = nodeNames.item(0);
 
-			// If getTextContent is not recognized, go to project properties and
-			// set the JRE to top and select it.
+			// If getTextContent is not recognized, go to project properties and set the JRE to top and select it.
 			String testName = node.getTextContent();
 
 			int right = Integer.parseInt(doc.getElementsByTagName("right").item(0).getTextContent().trim());
@@ -112,14 +115,14 @@ public class SuiteExecutionServiceImpl {
 			else
 				assertionFailures = wrong + ignores + exceptions;
 
-			updateDatabase(suiteId, testName, assertionFailures > 0 ? "FAILED" : "PASSED");
+			updateResultDatabase(suiteId, testName, assertionFailures > 0 ? "FAILED" : "PASSED");
 
 		} catch (SAXException | IOException | ParserConfigurationException | FactoryConfigurationError e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void updateDatabase(int suiteId, String testName, String status) {
+	private void updateResultDatabase(int suiteId, String testName, String status) {
 		AllTestResult allTestCaseResult = testCaseResultDao.findTestCase(suiteId, testName);
 
 		if (allTestCaseResult == null) {
@@ -146,6 +149,23 @@ public class SuiteExecutionServiceImpl {
 		else if (type == TestResultType.Failed)
 			return testCaseResultDao.getTestCaseCount(suiteId, "FAILED");
 		return 0;
+	}
+
+	public void setExecutionInterval(int settings) {
+		testExecutionSettingsDao.setExecutionInterval(settings);
+	}
+
+	public int findIntervalBetweenExecutionTimeInSeconds() {
+		return testExecutionSettingsDao.findIntervalBetweenExecutionTimeInSeconds();
+	}
+
+	public TestExecutionSettings findCurrentSettings() {
+		return testExecutionSettingsDao.getCurrentSettings();
+	}
+
+	public void setLastExecutionTime(String date) {
+		testExecutionSettingsDao.setLastExecutionTime(date);
+		
 	}
 
 }

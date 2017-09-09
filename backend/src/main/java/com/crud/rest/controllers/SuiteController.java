@@ -26,7 +26,6 @@ public class SuiteController {
 
 	@Autowired
 	@Qualifier("fitnesseSuiteServiceImpl")
-	// @Qualifier("duplicateServiceImpl")
 	private FitnesseSuiteService fitnesseService;
 
 	@Autowired

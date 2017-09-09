@@ -3,27 +3,49 @@
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
 
 	<!-- Appenders -->
-	<appender name="console" class="org.apache.log4j.ConsoleAppender">
-		<param name="Target" value="System.out" />
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%-5p: %c - %m%n" />
-		</layout>
-	</appender>
-	
+	<Appenders>
+		<appender name="console" class="org.apache.log4j.ConsoleAppender">
+			<param name="Target" value="System.out" />
+			<layout class="org.apache.log4j.PatternLayout">
+				<param name="ConversionPattern" value="%-5p: %c - %m%n" />
+			</layout>
+		</appender>
+		<appender name="file" class="org.apache.log4j.RollingFileAppender">
+			<param name="append" value="true" />
+			<param name="maxFileSize" value="10KB" />
+			<param name="maxBackupIndex" value="5" />
+			<!-- For Tomcat -->
+			<param name="file" value="${catalina.home}/logs/myStruts1App.log" />
+			<layout class="org.apache.log4j.PatternLayout">
+				<param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+			</layout>
+		</appender>
+		<!-- <appender name="file" class="org.apache.log4j.RollingFileAppender">
+			<param name="append" value="true" />
+			<param name="maxFileSize" value="10KB" />
+			<param name="maxBackupIndex" value="5" />
+			For test
+			<param name="file" value="C:/eclipse/log.txt" />
+			<layout class="org.apache.log4j.PatternLayout">
+				<param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+			</layout>
+		</appender> -->
+	</Appenders>
+
 	<!-- Application Loggers -->
 	<logger name="com.crud.rest">
 		<level value="info" />
 	</logger>
-	
+
 	<!-- 3rdparty Loggers -->
 	<logger name="org.springframework.core">
 		<level value="info" />
 	</logger>
-	
+
 	<logger name="org.springframework.beans">
 		<level value="info" />
 	</logger>
-	
+
 	<logger name="org.springframework.context">
 		<level value="info" />
 	</logger>
@@ -37,5 +59,5 @@
 		<priority value="warn" />
 		<appender-ref ref="console" />
 	</root>
-	
+
 </log4j:configuration>

@@ -1,4 +1,4 @@
-package com.crud.rest.controllers;
+package com.crud.rest.configuration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -7,19 +7,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
 
-@Component
+//@Component
 public class ScheduledTasks {
 
-	// private static final Logger log =
-	// LoggerFactory.getLogger(ScheduledTasks.class);
+	private static final Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
 
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -31,22 +30,14 @@ public class ScheduledTasks {
 
 	private boolean isAnySuiteAlreadyRunning;
 
-	// TODO Check if this can be configured externally or from database
-	@Scheduled(fixedRate=60000)
-	public void reportCurrentTime() {
-		// log.info("The time is now {}", dateFormat.format(new Date()));
-		System.out.println("Test execution started at " + dateFormat.format(new Date()));
-
-		// Update the last_execution_time for all enabled suite, also update the
-		// next_execution_time
-
-		// Get fitnesse username and password externally
+	// @Scheduled(fixedRate=60000)
+	public void triggerTestExecution(String fitnesseUsername, String fitnessePassword) {
+		log.info("Test execution started at " + dateFormat.format(new Date()));
 
 		List<FitnesseSuite> fitnesseSuites = fitnesseSuiteService.findAllSuites();
 		fitnesseSuites.removeIf(eachSuite -> !eachSuite.getShouldRun());
 
-		// If any of the suite is already running, don't run again. Abort the
-		// whole run for all suites. We can change the logic in future.
+		// If any of the suite is already running, don't run again. Abort the whole run for all suites. We can change the logic in future.
 		isAnySuiteAlreadyRunning = false;
 		fitnesseSuites.forEach((eachSuite) -> {
 			if (eachSuite.isRunning()) {
@@ -62,7 +53,7 @@ public class ScheduledTasks {
 		ExecutorService executor = Executors.newFixedThreadPool(fitnesseSuites.size());
 
 		for (FitnesseSuite fitnesseSuite : fitnesseSuites)
-			executor.submit(new TestExecution(fitnesseSuite));
+			executor.submit(new TestExecution(fitnesseSuite, fitnesseUsername, fitnessePassword));
 
 		executor.shutdown();
 
@@ -80,17 +71,24 @@ public class ScheduledTasks {
 
 	public class TestExecution implements Runnable {
 
-		FitnesseSuite fitnesseSuite;
+		private FitnesseSuite fitnesseSuite;
+		private String fitnesseUsername;
+		private String fitnessePassword;
 
-		TestExecution(FitnesseSuite fitnesseSuite) {
+		TestExecution(FitnesseSuite fitnesseSuite, String fitnesseUsername, String fitnessePassword) {
 			this.fitnesseSuite = fitnesseSuite;
+			this.fitnesseUsername = fitnesseUsername;
+			this.fitnessePassword = fitnessePassword;
 		}
 
 		@Override
 		public void run() {
 			fitnesseSuiteService.markTestRunningStatus(fitnesseSuite, true);
+			suiteExecutionService.setLastExecutionTime(new Date().toString());
 			int suiteId = fitnesseSuite.getSuiteId();
-			suiteExecutionService.executeSuite(suiteId, fitnesseSuite.getSuiteUrl(), null, null);
+
+			suiteExecutionService.executeSuite(suiteId, fitnesseSuite.getSuiteUrl(), fitnesseUsername,
+					fitnessePassword);
 			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(suiteId);
 			int failedTestCount = suiteExecutionService.getFailedTestCaseCount(suiteId);
 			fitnesseSuite.setPassedTests(passedTestCount);
