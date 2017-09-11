@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.sql.Date;
+import java.util.Date;
 import java.util.Base64;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -60,13 +60,14 @@ public class SuiteExecutionServiceImpl {
 			URL url = new URL(fitnessesuiteURL + "?suite&format=xml");
 
 			URLConnection con = url.openConnection();
-			// Authorization is not used if username is not provided (=null)
-			if (fitnesseUsername != null) {
+			// Authorization is not used if username is not provided (=null or empty)
+			if (fitnesseUsername != null && fitnesseUsername.trim().length() > 1) {
 				String authString = fitnesseUsername + ":" + fitnessePassword;
 				String authStringEnc = Base64.getEncoder().encodeToString(authString.getBytes("UTF-8"));
 				con.setRequestProperty("Authorization", "Basic " + authStringEnc);
 			}
-			con.setReadTimeout(43200000);
+			int timeout = findCurrentSettings().getConnectionTimeOut();
+			con.setReadTimeout(timeout);
 			// TODO Find out if it is possible to add result to database when the execution is on.
 			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 			String inputLine;
@@ -151,20 +152,24 @@ public class SuiteExecutionServiceImpl {
 		return 0;
 	}
 
-	public void setExecutionInterval(int settings) {
-		testExecutionSettingsDao.setExecutionInterval(settings);
-	}
-
-	public int findIntervalBetweenExecutionTimeInSeconds() {
-		return testExecutionSettingsDao.findIntervalBetweenExecutionTimeInSeconds();
-	}
-
 	public TestExecutionSettings findCurrentSettings() {
 		return testExecutionSettingsDao.getCurrentSettings();
 	}
 
-	public void setLastExecutionTime(String date) {
-		testExecutionSettingsDao.setLastExecutionTime(date);
+	public int findPollingIntervalInMinutes() {
+		return testExecutionSettingsDao.findPollingIntervalInMinutes();
+	}
+
+	public void setPollingInterval(int settings) {
+		testExecutionSettingsDao.setPollingInterval(settings);
+	}
+
+	public void setNextExecutionTime(Date date) {
+		testExecutionSettingsDao.setNextExecutionTime(date);
+	}
+
+	public void updateTestExecutionSettings(TestExecutionSettings testExecutionsettings) {
+		testExecutionSettingsDao.updateTestExecutionSettings(testExecutionsettings);
 		
 	}
 

@@ -24,5 +24,5 @@ public interface FitnesseSuiteDao {
 
 	FitnesseSuite findById(long id);
 
-	void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning);
+	void updateTestSuite(FitnesseSuite fitnesseSuite);
 }

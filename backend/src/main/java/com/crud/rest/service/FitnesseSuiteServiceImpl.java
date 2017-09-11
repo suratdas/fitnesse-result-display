@@ -65,8 +65,8 @@ public class FitnesseSuiteServiceImpl implements FitnesseSuiteService {
 	}
 
 	@Override
-	public void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning) {
-		fitnesseDao.markTestRunningStatus(fitnesseSuite, isRunning);
+	public void updateTestSuite(FitnesseSuite fitnesseSuite) {
+		fitnesseDao.updateTestSuite(fitnesseSuite);
 	}
 
 }

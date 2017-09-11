@@ -1,15 +1,19 @@
 package com.crud.rest.dao;
 
+import java.util.Date;
+
 import com.crud.rest.model.TestExecutionSettings;
 
 public interface TestExecutionSettingsDao {
 
-	int findIntervalBetweenExecutionTimeInSeconds();
-
-	void setExecutionInterval(int settings);
-
 	TestExecutionSettings getCurrentSettings();
 
-	void setLastExecutionTime(String date);
+	int findPollingIntervalInMinutes();
+
+	void setPollingInterval(int settings);
+
+	void setNextExecutionTime(Date date);
+
+	void updateTestExecutionSettings(TestExecutionSettings settings);
 
 }

@@ -1,5 +1,7 @@
 package com.crud.rest.model;
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -28,11 +30,17 @@ public class TestExecutionSettings {
 	@Column(name = "connection_timeout")
 	private int connectionTimeOut;
 
-	@Column(name = "execution_interval")
+	@Column(name = "polling_interval_in_minutes")
+	private int pollingInterval;
+
+	@Column(name = "execution_interval_in_minutes")
 	private int executionInterval;
 
-	@Column(name = "last_execution_time")
-	private String lastExecutionTime;
+	@Column(name = "next_execution_time", columnDefinition = "DATETIME")
+	private Date nextExecutionTime;
+
+	@Column(name = "is_running")
+	private boolean isRunning;
 
 	public int getNumberOfExecutionThread() {
 		return numberOfExecutionThread;
@@ -66,6 +74,22 @@ public class TestExecutionSettings {
 		this.connectionTimeOut = connectionTimeOut;
 	}
 
+	public int getPollingInterval() {
+		return pollingInterval;
+	}
+
+	public void setPollingInterval(int pollingInterval) {
+		this.pollingInterval = pollingInterval;
+	}
+
+	public Date getNextExecutionTime() {
+		return nextExecutionTime;
+	}
+
+	public void setNextExecutionTime(Date nextExecutionTime) {
+		this.nextExecutionTime = nextExecutionTime;
+	}
+
 	public int getExecutionInterval() {
 		return executionInterval;
 	}
@@ -74,11 +98,12 @@ public class TestExecutionSettings {
 		this.executionInterval = executionInterval;
 	}
 
-	public String getLastExecutionTime() {
-		return lastExecutionTime;
+	public boolean isRunning() {
+		return isRunning;
 	}
 
-	public void setLastExecutionTime(String lastExecutionTime) {
-		this.lastExecutionTime = lastExecutionTime;
+	public void setRunning(boolean isRunning) {
+		this.isRunning = isRunning;
 	}
+
 }

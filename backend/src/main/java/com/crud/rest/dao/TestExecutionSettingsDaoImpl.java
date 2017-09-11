@@ -1,9 +1,9 @@
 package com.crud.rest.dao;
 
+import java.util.Date;
 import java.util.Iterator;
 
 import org.hibernate.Criteria;
-import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -20,11 +20,11 @@ public class TestExecutionSettingsDaoImpl implements TestExecutionSettingsDao {
 	private SessionFactory sessionFactory;
 
 	@Override
-	public int findIntervalBetweenExecutionTimeInSeconds() {
-		Object valueToReturn = findValueFromSettings("executionInterval");
+	public int findPollingIntervalInMinutes() {
+		Object valueToReturn = findValueFromSettings("pollingInterval");
 		//Return one day.
 		if (valueToReturn == null)
-			return 86400;
+			return 1440;
 		return (int) valueToReturn;
 	}
 
@@ -42,25 +42,27 @@ public class TestExecutionSettingsDaoImpl implements TestExecutionSettingsDao {
 			session.close();
 			return valueToReturn;
 		} catch (Exception e) {
+			e.printStackTrace();
 			session.close();
 		}
 		return null;
 	}
 
 	@Override
-	public void setExecutionInterval(int interval) {
+	public void setPollingInterval(int interval) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
 
 			TestExecutionSettings settings = (TestExecutionSettings) session
-					.createQuery("from com.crud.rest.dao.TestExecutionSettings").uniqueResult();
+					.createQuery("from TestExecutionSettings").uniqueResult();
 
-			settings.setExecutionInterval(interval);
+			settings.setPollingInterval(interval);
 			session.update(settings);
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {
+			e.printStackTrace();
 			session.close();
 		}
 	}
@@ -79,27 +81,43 @@ public class TestExecutionSettingsDaoImpl implements TestExecutionSettingsDao {
 			session.close();
 			return valueToReturn;
 		} catch (Exception e) {
+			e.printStackTrace();
 			session.close();
 		}
 		return null;
 	}
 
 	@Override
-	public void setLastExecutionTime(String date) {
+	public void setNextExecutionTime(Date date) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {
 
-			Query query = session.createQuery("from TestExecutionSettings");
-			TestExecutionSettings settings = (TestExecutionSettings) query.uniqueResult();
+			TestExecutionSettings settings = (TestExecutionSettings) session
+					.createQuery("from TestExecutionSettings").uniqueResult();
 
-			settings.setLastExecutionTime(date);
+			settings.setNextExecutionTime(date);
 			session.update(settings);
 			transaction.commit();
 			session.close();
 		} catch (Exception e) {
 			session.close();
 		}
+	}
+	
+	@Override
+	public void updateTestExecutionSettings(TestExecutionSettings settings){
+		Session session = sessionFactory.openSession();
+		Transaction transaction = session.beginTransaction();
+		try {
+			session.update(settings);
+			transaction.commit();
+			session.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			session.close();
+		}
+		
 	}
 
 }

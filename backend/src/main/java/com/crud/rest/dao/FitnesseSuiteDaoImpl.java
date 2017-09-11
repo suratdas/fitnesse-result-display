@@ -157,8 +157,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 	}
 
 	@Override
-	public void markTestRunningStatus(FitnesseSuite fitnesseSuite, boolean isRunning) {
-		fitnesseSuite.setRunning(isRunning);
+	public void updateTestSuite(FitnesseSuite fitnesseSuite) {
 		Session session = sessionFactory.openSession();
 		Transaction transaction = session.beginTransaction();
 		try {

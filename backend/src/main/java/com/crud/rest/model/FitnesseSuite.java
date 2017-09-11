@@ -1,6 +1,6 @@
 package com.crud.rest.model;
 
-import java.sql.Date;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -34,21 +34,18 @@ public class FitnesseSuite {
 
 	@Column(name = "is_running")
 	private boolean isRunning;
-	
-	@Column(name="total_tests")
+
+	@Column(name = "total_tests")
 	private int totalTests;
 
-	@Column(name="passed_tests")
+	@Column(name = "passed_tests")
 	private int passedTests;
 
-	@Column(name="failed_tests")
+	@Column(name = "failed_tests")
 	private int failedTests;
-	
-	@Column(name="last_execution_time")
-	private Date lastExecutionTime;
 
-	@Column(name="next_execution_time")
-	private Date nextExecutionTime;
+	@Column(name = "last_execution_time")
+	private Date lastExecutionTime;
 
 	// setters and getters
 	public int getSuiteId() {
@@ -90,7 +87,7 @@ public class FitnesseSuite {
 	public void setRunning(boolean isRunning) {
 		this.isRunning = isRunning;
 	}
-	
+
 	public int getTotalTests() {
 		return totalTests;
 	}
@@ -123,18 +120,9 @@ public class FitnesseSuite {
 		this.lastExecutionTime = lastExecutionTime;
 	}
 
-	public Date getNextExecutionTime() {
-		return nextExecutionTime;
-	}
-
-	public void setNextExecutionTime(Date nextExecutionTime) {
-		this.nextExecutionTime = nextExecutionTime;
-	}
-	
-
 	// constructor with fields
 	public FitnesseSuite(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning,
-			int totalTests, int passedTests, int failedTests, Date lastExecutionTime, Date nextExecutionTime) {
+			int totalTests, int passedTests, int failedTests, Date lastExecutionTime) {
 		super();
 		this.suiteId = suiteId;
 		this.suiteName = suiteName;
@@ -145,17 +133,7 @@ public class FitnesseSuite {
 		this.passedTests = passedTests;
 		this.failedTests = failedTests;
 		this.lastExecutionTime = lastExecutionTime;
-		this.nextExecutionTime = nextExecutionTime;
 	}
-
-	/*public FitnesseSuites(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning) {
-		super();
-		this.suiteId = suiteId;
-		this.suiteName = suiteName;
-		this.suiteUrl = suiteUrl;
-		this.shouldRun = shouldRun;
-		this.isRunning = isRunning;
-	}*/
 
 	// constructor without fields
 	public FitnesseSuite() {

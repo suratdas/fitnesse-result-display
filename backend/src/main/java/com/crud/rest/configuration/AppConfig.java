@@ -39,7 +39,6 @@ import com.crud.rest.service.SuiteExecutionServiceImpl;
 @EnableScheduling
 @PropertySource(value = { "classpath:properties/${property:defaultValue}.properties" }, ignoreResourceNotFound = true)
 public class AppConfig implements SchedulingConfigurer {
-	// @Bean configurations go here...
 
 	@Value("${db.url}")
 	private String dbUrl;
@@ -58,7 +57,6 @@ public class AppConfig implements SchedulingConfigurer {
 
 		PropertyPlaceholderConfigurer ppc = new PropertyPlaceholderConfigurer();
 		ClassPathResource[] resources = new ClassPathResource[] { new ClassPathResource("db.properties") };
-		// FileSystemResource resources = new FileSystemResource(new File("db.properties"));
 		ppc.setLocations(resources);
 		ppc.setIgnoreUnresolvablePlaceholders(true);
 		ppc.setSearchSystemEnvironment(true);
@@ -122,9 +120,21 @@ public class AppConfig implements SchedulingConfigurer {
 		taskRegistrar.addTriggerTask(new Runnable() {
 			@Override
 			public void run() {
+				System.out.println("Polling at " + new Date());
 				TestExecutionSettings testExecutionSettings = testExecutionService.findCurrentSettings();
-				myBean().triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
-						testExecutionSettings.getFitnessePassword());
+				Date nextExecutionTime = testExecutionSettings.getNextExecutionTime();
+				try {
+					if (testExecutionSettings.isRunning())
+						return;
+					if (nextExecutionTime == null || nextExecutionTime.before(new Date())) {
+						myBean().triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
+								testExecutionSettings.getFitnessePassword());
+						return;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 			}
 		}, new Trigger() {
 			@Override
@@ -132,8 +142,8 @@ public class AppConfig implements SchedulingConfigurer {
 				Calendar nextExecutionTime = new GregorianCalendar();
 				Date lastActualExecutionTime = triggerContext.lastActualExecutionTime();
 				nextExecutionTime.setTime(lastActualExecutionTime != null ? lastActualExecutionTime : new Date());
-				int interval = testExecutionService.findIntervalBetweenExecutionTimeInSeconds();
-				// nextExecutionTime.add(Calendar.MILLISECOND, env.getProperty("myRate", Integer.class));
+				int interval = testExecutionService.findPollingIntervalInMinutes();
+				//TODO Remember to set it to Minute when deploying for non-debug actual execution.
 				nextExecutionTime.add(Calendar.SECOND, interval);
 				return nextExecutionTime.getTime();
 			}

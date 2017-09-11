@@ -1,6 +1,7 @@
 package com.crud.rest.configuration;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.crud.rest.model.FitnesseSuite;
+import com.crud.rest.model.TestExecutionSettings;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
 
@@ -28,7 +30,17 @@ public class ScheduledTasks {
 	@Autowired
 	private FitnesseSuiteService fitnesseSuiteService;
 
-	private boolean isAnySuiteAlreadyRunning;
+	private boolean isAnySuiteAlreadyRunning, scheduledExecution = true;
+
+	public ScheduledTasks(SuiteExecutionServiceImpl suiteExecutionService, FitnesseSuiteService fitnesseSuiteService,
+			boolean scheduledExecution) {
+		this.suiteExecutionService = suiteExecutionService;
+		this.fitnesseSuiteService = fitnesseSuiteService;
+		this.scheduledExecution = scheduledExecution;
+	}
+
+	public ScheduledTasks() {
+	}
 
 	// @Scheduled(fixedRate=60000)
 	public void triggerTestExecution(String fitnesseUsername, String fitnessePassword) {
@@ -50,7 +62,21 @@ public class ScheduledTasks {
 		if (isAnySuiteAlreadyRunning)
 			return;
 
-		ExecutorService executor = Executors.newFixedThreadPool(fitnesseSuites.size());
+		TestExecutionSettings testExecutionsettings = suiteExecutionService.findCurrentSettings();
+		if (scheduledExecution) {
+			Calendar date = Calendar.getInstance();
+			long currentTime = date.getTimeInMillis();
+			//TODO Ensure that you have right value in database. Set 1440 if you want to execute every day.
+			Date afterAddingIntervalInMinutes = new Date(
+					currentTime + (testExecutionsettings.getExecutionInterval() * 60000));
+			testExecutionsettings.setNextExecutionTime(afterAddingIntervalInMinutes);
+		}
+
+		testExecutionsettings.setRunning(true);
+
+		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
+
+		ExecutorService executor = Executors.newFixedThreadPool(testExecutionsettings.getNumberOfExecutionThread());
 
 		for (FitnesseSuite fitnesseSuite : fitnesseSuites)
 			executor.submit(new TestExecution(fitnesseSuite, fitnesseUsername, fitnessePassword));
@@ -64,6 +90,9 @@ public class ScheduledTasks {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+
+		testExecutionsettings.setRunning(false);
+		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
 
 		System.out.println("All suites run successfully");
 
@@ -83,18 +112,21 @@ public class ScheduledTasks {
 
 		@Override
 		public void run() {
-			fitnesseSuiteService.markTestRunningStatus(fitnesseSuite, true);
-			suiteExecutionService.setLastExecutionTime(new Date().toString());
+			fitnesseSuite.setRunning(true);
+			fitnesseSuiteService.updateTestSuite(fitnesseSuite);
 			int suiteId = fitnesseSuite.getSuiteId();
 
 			suiteExecutionService.executeSuite(suiteId, fitnesseSuite.getSuiteUrl(), fitnesseUsername,
 					fitnessePassword);
+
 			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(suiteId);
 			int failedTestCount = suiteExecutionService.getFailedTestCaseCount(suiteId);
 			fitnesseSuite.setPassedTests(passedTestCount);
 			fitnesseSuite.setFailedTests(failedTestCount);
 			fitnesseSuite.setTotalTests(passedTestCount + failedTestCount);
-			fitnesseSuiteService.markTestRunningStatus(fitnesseSuite, false);
+			fitnesseSuite.setLastExecutionTime(new Date());
+			fitnesseSuite.setRunning(false);
+			fitnesseSuiteService.updateTestSuite(fitnesseSuite);
 		}
 
 	}
