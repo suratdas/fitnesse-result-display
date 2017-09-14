@@ -86,7 +86,7 @@ public class ScheduledTasks {
 		System.out.println(String.format("Running %d suites in parallel...", fitnesseSuites.size()));
 
 		try {
-			executor.awaitTermination(30, TimeUnit.SECONDS);
+			executor.awaitTermination(60, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -94,7 +94,7 @@ public class ScheduledTasks {
 		testExecutionsettings.setRunning(false);
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
 
-		System.out.println("All suites run successfully");
+		System.out.println("Execution completed. Check log file for the details.");
 
 	}
 
@@ -114,13 +114,15 @@ public class ScheduledTasks {
 		public void run() {
 			fitnesseSuite.setRunning(true);
 			fitnesseSuiteService.updateTestSuite(fitnesseSuite);
-			int suiteId = fitnesseSuite.getSuiteId();
 
-			suiteExecutionService.executeSuite(suiteId, fitnesseSuite.getSuiteUrl(), fitnesseUsername,
-					fitnessePassword);
+			try {
+				suiteExecutionService.executeSuite(fitnesseSuite, fitnesseUsername, fitnessePassword);
+			} catch (Exception e) {
+				System.out.println(fitnesseSuite.getSuiteName() + " threw an error.\n" + e);
+			}
 
-			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(suiteId);
-			int failedTestCount = suiteExecutionService.getFailedTestCaseCount(suiteId);
+			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(fitnesseSuite.getSuiteId());
+			int failedTestCount = suiteExecutionService.getFailedTestCaseCount(fitnesseSuite.getSuiteId());
 			fitnesseSuite.setPassedTests(passedTestCount);
 			fitnesseSuite.setFailedTests(failedTestCount);
 			fitnesseSuite.setTotalTests(passedTestCount + failedTestCount);

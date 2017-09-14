@@ -121,6 +121,8 @@ public class AppConfig implements SchedulingConfigurer {
 			@Override
 			public void run() {
 				System.out.println("Polling at " + new Date());
+				//TODO Assume Fitnesse username/password is same for all suites. For different credentials, have to add extra logic.
+				//TODO Add logic to encrypt/decrypt password
 				TestExecutionSettings testExecutionSettings = testExecutionService.findCurrentSettings();
 				Date nextExecutionTime = testExecutionSettings.getNextExecutionTime();
 				try {

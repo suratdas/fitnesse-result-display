@@ -47,6 +47,9 @@ public class FitnesseSuite {
 	@Column(name = "last_execution_time")
 	private Date lastExecutionTime;
 
+	@Column(name = "fitnesse_result_path")
+	private String suiteResultFolderPath;
+
 	// setters and getters
 	public int getSuiteId() {
 		return suiteId;
@@ -120,9 +123,17 @@ public class FitnesseSuite {
 		this.lastExecutionTime = lastExecutionTime;
 	}
 
+	public String getSuiteResultFolderPath() {
+		return suiteResultFolderPath;
+	}
+
+	public void setSuiteResultFolderPath(String suiteResultFolderPath) {
+		this.suiteResultFolderPath = suiteResultFolderPath;
+	}
+
 	// constructor with fields
 	public FitnesseSuite(int suiteId, String suiteName, String suiteUrl, boolean shouldRun, boolean isRunning,
-			int totalTests, int passedTests, int failedTests, Date lastExecutionTime) {
+			int totalTests, int passedTests, int failedTests, Date lastExecutionTime, String suiteResultFolderPath) {
 		super();
 		this.suiteId = suiteId;
 		this.suiteName = suiteName;
@@ -133,6 +144,7 @@ public class FitnesseSuite {
 		this.passedTests = passedTests;
 		this.failedTests = failedTests;
 		this.lastExecutionTime = lastExecutionTime;
+		this.suiteResultFolderPath = suiteResultFolderPath;
 	}
 
 	// constructor without fields

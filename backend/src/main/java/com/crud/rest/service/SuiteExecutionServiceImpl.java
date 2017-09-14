@@ -3,17 +3,27 @@ package com.crud.rest.service;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.Base64;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -24,6 +34,7 @@ import org.xml.sax.SAXException;
 import com.crud.rest.dao.TestCaseResultDao;
 import com.crud.rest.dao.TestExecutionSettingsDao;
 import com.crud.rest.model.AllTestResult;
+import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
 
 @Service
@@ -39,9 +50,11 @@ public class SuiteExecutionServiceImpl {
 	@Autowired
 	private TestExecutionSettingsDao testExecutionSettingsDao;
 
-	public void executeSuite(int suiteId, String suiteURL, String fitnesseUsername, String fitnessePassword) {
+	public void executeSuite(FitnesseSuite fitnesseSuite, String fitnesseUsername, String fitnessePassword)
+			throws Exception {
+		int suiteId = fitnesseSuite.getSuiteId();
 		testCaseResultDao.clearPreviousTestResultsForSuite(suiteId);
-		runFitnesseSuite(suiteId, suiteURL, fitnesseUsername, fitnessePassword);
+		runFitnesseSuite(fitnesseSuite, fitnesseUsername, fitnessePassword);
 		testCaseResultDao.deleteUnusedTestResults(suiteId);
 	}
 
@@ -53,23 +66,43 @@ public class SuiteExecutionServiceImpl {
 		testCaseResultDao.deleteAllResults();
 	}
 
-	private void runFitnesseSuite(int suiteId, String fitnessesuiteURL, String fitnesseUsername,
-			String fitnessePassword) {
-		try {
+	private void runFitnesseSuite(FitnesseSuite fitnesseSuite, String fitnesseUsername, String fitnessePassword)
+			throws Exception {
 
-			URL url = new URL(fitnessesuiteURL + "?suite&format=xml");
+		int suiteId = fitnesseSuite.getSuiteId();
 
-			URLConnection con = url.openConnection();
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+
+			HttpGet httpGet = new HttpGet(fitnesseSuite.getSuiteUrl() + "?suite&format=xml");
+
 			// Authorization is not used if username is not provided (=null or empty)
 			if (fitnesseUsername != null && fitnesseUsername.trim().length() > 1) {
-				String authString = fitnesseUsername + ":" + fitnessePassword;
-				String authStringEnc = Base64.getEncoder().encodeToString(authString.getBytes("UTF-8"));
-				con.setRequestProperty("Authorization", "Basic " + authStringEnc);
+				UsernamePasswordCredentials creds = new UsernamePasswordCredentials(fitnesseUsername, fitnessePassword);
+				Header headerAuth = new BasicScheme(StandardCharsets.UTF_8).authenticate(creds, httpGet, null);
+				httpGet.addHeader(headerAuth);
 			}
-			int timeout = findCurrentSettings().getConnectionTimeOut();
-			con.setReadTimeout(timeout);
+
+			String timeout = Integer.toString(testExecutionSettingsDao.getCurrentSettings().getConnectionTimeOut());
+			Header headerTimeout = new BasicHeader(HttpHeaders.TIMEOUT, timeout);
+			Header headerconnection = new BasicHeader(HttpHeaders.CONNECTION, "Keep-alive");
+
+			httpGet.addHeader(headerTimeout);
+			httpGet.addHeader(headerconnection);
+
+			HttpResponse httpResponse = httpClient.execute(httpGet);
+			HttpEntity responseEntity = httpResponse.getEntity();
+
 			// TODO Find out if it is possible to add result to database when the execution is on.
-			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			InputStream inputStream = responseEntity.getContent();
+			InputStreamReader inputStremReader = new InputStreamReader(inputStream);
+			BufferedReader in = new BufferedReader(inputStremReader);
+			int responseStatusCode = httpResponse.getStatusLine().getStatusCode();
+			if (responseStatusCode != 200) {
+				System.out.println(String.format("The status is returned as %d for suite %s.", responseStatusCode,
+						fitnesseSuite.getSuiteName()));
+				throw new Exception("Did not get the right response from server.");
+			}
+
 			String inputLine;
 			String oneResultNode = "";
 			boolean collateNode = false;
@@ -77,7 +110,7 @@ public class SuiteExecutionServiceImpl {
 				if (collateNode) {
 					oneResultNode += inputLine + "\n";
 					if (inputLine.trim().startsWith("</result")) {
-						processEachTestCase(suiteId, oneResultNode);
+						processEachTestCaseFromOverviewResult(suiteId, oneResultNode);
 						oneResultNode = "";
 						collateNode = false;
 					}
@@ -89,12 +122,12 @@ public class SuiteExecutionServiceImpl {
 			}
 			System.out.println(oneResultNode);
 			in.close();
-		} catch (IOException e) {
+		} catch (IOException | AuthenticationException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void processEachTestCase(int suiteId, String oneResultNode) {
+	private void processEachTestCaseFromOverviewResult(int suiteId, String oneResultNode) {
 		try {
 			DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			Document doc = newDocumentBuilder.parse(new ByteArrayInputStream(oneResultNode.getBytes()));
@@ -132,6 +165,7 @@ public class SuiteExecutionServiceImpl {
 			testCaseResultDao.createTestCaseResult(allTestCaseResult);
 		} else {
 			allTestCaseResult.setStatus(status);
+			allTestCaseResult.setLastExecutionTime(new Date(System.currentTimeMillis()));
 			testCaseResultDao.updateTestCaseResult(allTestCaseResult);
 		}
 	}
@@ -170,7 +204,7 @@ public class SuiteExecutionServiceImpl {
 
 	public void updateTestExecutionSettings(TestExecutionSettings testExecutionsettings) {
 		testExecutionSettingsDao.updateTestExecutionSettings(testExecutionsettings);
-		
+
 	}
 
 }

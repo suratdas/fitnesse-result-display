@@ -3,6 +3,7 @@ package com.crud.rest.controllers;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crud.rest.configuration.ScheduledTasks;
+import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
@@ -51,6 +53,26 @@ public class ExecutionController {
 		TestExecutionSettings testExecutionSettings = suiteExecutionService.findCurrentSettings();
 		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
 				testExecutionSettings.getFitnessePassword());
+	}
+
+	@RequestMapping(value = "/resetRunningStatusForAllSuites", method = RequestMethod.GET)
+	public String enableAllSuites() {
+		List<FitnesseSuite> suites = fitnesseSuiteService.findAllSuites();
+		suites.forEach(suite -> {
+			if (suite.isRunning()) {
+				suite.setRunning(false);
+				fitnesseSuiteService.updateSuite(suite);
+				System.out.println(suite.getSuiteName() + " running status reset.");
+			}
+		});
+		TestExecutionSettings settings = suiteExecutionService.findCurrentSettings();
+
+		if (settings.isRunning()) {
+			settings.setRunning(false);
+			suiteExecutionService.updateTestExecutionSettings(settings);
+			System.out.println("Execution status reset.");
+		}
+		return "All suites reset.";
 	}
 
 }

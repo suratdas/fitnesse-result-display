@@ -10,9 +10,9 @@ public interface FitnesseSuiteService {
 
 	FitnesseSuite findBySuiteName(String name);
 
-	void saveSuite(FitnesseSuite Customer);
+	void saveSuite(FitnesseSuite fitnesseSuite);
 
-	void updateSuite(FitnesseSuite Customer);
+	void updateSuite(FitnesseSuite fitnesseSuite);
 
 	void deleteSuiteById(int id);
 
@@ -20,7 +20,7 @@ public interface FitnesseSuiteService {
 
 	void deleteAllSuites();
 
-	boolean isSuiteExist(FitnesseSuite Customer);
+	boolean isSuiteExist(FitnesseSuite fitnesseSuite);
 
 	FitnesseSuite findBySuiteId(String id);
 
