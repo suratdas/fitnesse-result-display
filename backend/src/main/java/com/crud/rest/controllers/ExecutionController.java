@@ -5,12 +5,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.crud.rest.configuration.AppConfig;
 import com.crud.rest.configuration.ScheduledTasks;
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
@@ -30,7 +32,7 @@ public class ExecutionController {
 	@RequestMapping(value = "/changePollingInterval/{interval}", method = RequestMethod.GET)
 	public String changePollingInterval(@PathVariable("interval") int interval) {
 		suiteExecutionService.setPollingInterval(interval);
-		return "Updated to " + interval + " minutes.";
+		return "Updated to " + interval + " minute(s).";
 	}
 
 	@RequestMapping(value = "/changeExecutionTime/{nextExecutionTime}", method = RequestMethod.GET)
@@ -52,7 +54,15 @@ public class ExecutionController {
 		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
 		TestExecutionSettings testExecutionSettings = suiteExecutionService.findCurrentSettings();
 		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
-				testExecutionSettings.getFitnessePassword());
+				testExecutionSettings.getFitnessePassword(), false);
+	}
+
+	@RequestMapping(value = "/forceStart", method = RequestMethod.GET)
+	public void triggerForcedExecution() {
+		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
+		TestExecutionSettings testExecutionSettings = suiteExecutionService.findCurrentSettings();
+		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
+				testExecutionSettings.getFitnessePassword(), true);
 	}
 
 	@RequestMapping(value = "/resetRunningStatusForAllSuites", method = RequestMethod.GET)
@@ -73,6 +83,14 @@ public class ExecutionController {
 			System.out.println("Execution status reset.");
 		}
 		return "All suites reset.";
+	}
+
+	@RequestMapping(value = "/encrypt/{value}", method = RequestMethod.GET)
+	public String encryptPassword(@PathVariable String value) {
+		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+		encryptor.setPassword(AppConfig.encryptionSeed);
+		return encryptor.encrypt(value);
+
 	}
 
 }

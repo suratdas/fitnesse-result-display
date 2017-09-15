@@ -82,7 +82,7 @@ public class SuiteExecutionServiceImpl {
 				httpGet.addHeader(headerAuth);
 			}
 
-			String timeout = Integer.toString(testExecutionSettingsDao.getCurrentSettings().getConnectionTimeOut());
+			String timeout = Integer.toString(testExecutionSettingsDao.getCurrentSettings().getConnectionTimeOutInMinutes() * 60);
 			Header headerTimeout = new BasicHeader(HttpHeaders.TIMEOUT, timeout);
 			Header headerconnection = new BasicHeader(HttpHeaders.CONNECTION, "Keep-alive");
 

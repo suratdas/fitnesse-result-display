@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
@@ -40,6 +41,8 @@ import com.crud.rest.service.SuiteExecutionServiceImpl;
 @PropertySource(value = { "classpath:properties/${property:defaultValue}.properties" }, ignoreResourceNotFound = true)
 public class AppConfig implements SchedulingConfigurer {
 
+	public static final String encryptionSeed = "fitnesseExecution";
+
 	@Value("${db.url}")
 	private String dbUrl;
 
@@ -69,7 +72,13 @@ public class AppConfig implements SchedulingConfigurer {
 		dataSource.setUrl(dbUrl);
 		dataSource.setDriverClassName(dbDriver);
 		dataSource.setUsername(dbUsername);
-		dataSource.setPassword(dbPassword);
+
+		//Use Jasypt API with same logic as below to encrypt and put the encrypted password in the db.properties file.
+		StandardPBEStringEncryptor decryptor = new StandardPBEStringEncryptor();
+		decryptor.setPassword(encryptionSeed);
+		String decryptedDatabasePassword = decryptor.decrypt(dbPassword);
+
+		dataSource.setPassword(decryptedDatabasePassword);
 
 		return dataSource;
 	}
@@ -122,15 +131,16 @@ public class AppConfig implements SchedulingConfigurer {
 			public void run() {
 				System.out.println("Polling at " + new Date());
 				//TODO Assume Fitnesse username/password is same for all suites. For different credentials, have to add extra logic.
-				//TODO Add logic to encrypt/decrypt password
+				//TODO Add logging
 				TestExecutionSettings testExecutionSettings = testExecutionService.findCurrentSettings();
 				Date nextExecutionTime = testExecutionSettings.getNextExecutionTime();
+
 				try {
 					if (testExecutionSettings.isRunning())
 						return;
 					if (nextExecutionTime == null || nextExecutionTime.before(new Date())) {
 						myBean().triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
-								testExecutionSettings.getFitnessePassword());
+								testExecutionSettings.getFitnessePassword(), false);
 						return;
 					}
 				} catch (Exception e) {
@@ -145,8 +155,10 @@ public class AppConfig implements SchedulingConfigurer {
 				Date lastActualExecutionTime = triggerContext.lastActualExecutionTime();
 				nextExecutionTime.setTime(lastActualExecutionTime != null ? lastActualExecutionTime : new Date());
 				int interval = testExecutionService.findPollingIntervalInMinutes();
-				//TODO Remember to set it to Minute when deploying for non-debug actual execution.
-				nextExecutionTime.add(Calendar.SECOND, interval);
+				//Prevent side effect of accidental setting of undesired value in database
+				if (interval < 1)
+					interval = 1;
+				nextExecutionTime.add(Calendar.MINUTE, interval);
 				return nextExecutionTime.getTime();
 			}
 		});

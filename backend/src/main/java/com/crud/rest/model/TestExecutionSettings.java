@@ -27,8 +27,8 @@ public class TestExecutionSettings {
 	@Column(name = "fitnesse_password")
 	private String fitnessePassword;
 
-	@Column(name = "connection_timeout")
-	private int connectionTimeOut;
+	@Column(name = "connection_timeout_in_minutes")
+	private int connectionTimeOutInMinutes;
 
 	@Column(name = "polling_interval_in_minutes")
 	private int pollingInterval;
@@ -66,12 +66,12 @@ public class TestExecutionSettings {
 		this.fitnessePassword = fitnessePassword;
 	}
 
-	public int getConnectionTimeOut() {
-		return connectionTimeOut;
+	public int getConnectionTimeOutInMinutes() {
+		return connectionTimeOutInMinutes;
 	}
 
-	public void setConnectionTimeOut(int connectionTimeOut) {
-		this.connectionTimeOut = connectionTimeOut;
+	public void setConnectionTimeOutInMinutes(int connectionTimeOut) {
+		this.connectionTimeOutInMinutes = connectionTimeOut;
 	}
 
 	public int getPollingInterval() {
