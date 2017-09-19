@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.crud.rest.configuration.CustomLogger;
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
@@ -39,34 +40,32 @@ public class SuiteController {
 	public ResponseEntity<Void> addFitnesseSuite(@RequestBody FitnesseSuite fitnesse,
 			@RequestHeader("Accept") String header, UriComponentsBuilder ucb) {
 
-		if (fitnesseService.isSuiteExist(fitnesse)) {
+		if (fitnesseService.isSuiteExist(fitnesse))
 			return new ResponseEntity<Void>(HttpStatus.CONFLICT);
-		} else {
 
-			fitnesseService.saveSuite(fitnesse);
-			HttpHeaders headers = new HttpHeaders();
-			headers.setLocation(ucb.path("/fitnesse/{id}").buildAndExpand(fitnesse.getSuiteId()).toUri());
-			return new ResponseEntity<Void>(HttpStatus.CREATED);
-		}
+		fitnesseService.saveSuite(fitnesse);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(ucb.path("/fitnesse/{id}").buildAndExpand(fitnesse.getSuiteId()).toUri());
+		return new ResponseEntity<Void>(HttpStatus.CREATED);
 	}
 
 	@RequestMapping(value = "/suite/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<FitnesseSuite> getSuite(@PathVariable("id") String id) {
 
 		FitnesseSuite fitnesse = fitnesseService.findBySuiteId(id);
-		if (fitnesse == null) {
+		if (fitnesse == null)
 			return new ResponseEntity<FitnesseSuite>(HttpStatus.NOT_FOUND);
-		}
+
 		return new ResponseEntity<FitnesseSuite>(fitnesse, HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/suites", method = RequestMethod.GET)
 	public ResponseEntity<List<FitnesseSuite>> listAllSuites() {
 		List<FitnesseSuite> fitnesses = fitnesseService.findAllSuites();
-		if (fitnesses.isEmpty()) {
+		if (fitnesses.isEmpty())
 			return new ResponseEntity<List<FitnesseSuite>>(HttpStatus.NO_CONTENT);
-		}
-		fitnesses.forEach(f -> System.out.println(f.getSuiteName()));
+
+		fitnesses.forEach(f -> CustomLogger.logInfo(f.getSuiteName()));
 		return new ResponseEntity<List<FitnesseSuite>>(fitnesses, HttpStatus.OK);
 	}
 
@@ -76,9 +75,8 @@ public class SuiteController {
 
 		FitnesseSuite fitnesseSuite = fitnesseService.findBySuiteId(id);
 
-		if (fitnesseSuitePassed == null) {
+		if (fitnesseSuitePassed == null)
 			return new ResponseEntity<FitnesseSuite>(HttpStatus.NOT_FOUND);
-		}
 
 		fitnesseSuite.setSuiteName(fitnesseSuitePassed.getSuiteName());
 		fitnesseSuite.setSuiteUrl(fitnesseSuitePassed.getSuiteUrl());
@@ -93,16 +91,15 @@ public class SuiteController {
 	public ResponseEntity<FitnesseSuite> deleteSuite(@PathVariable("id") int id) {
 
 		FitnesseSuite fitnesse = fitnesseService.findBySuiteId(Integer.toString(id));
-		if (fitnesse == null) {
+		if (fitnesse == null)
 			return new ResponseEntity<FitnesseSuite>(HttpStatus.NOT_FOUND);
-		}
 
 		fitnesseService.deleteSuiteById(id);
 		suiteExecutionServiceImpl.deleteAllResults(id);
 		return new ResponseEntity<FitnesseSuite>(HttpStatus.NO_CONTENT);
 	}
 
-	// This is risky as it deletes everything from database.
+	// Be careful with this request, as it deletes everything from database.
 	@RequestMapping(value = "/suite/deleteAll", method = RequestMethod.DELETE)
 	public ResponseEntity<FitnesseSuite> deleteAllSuites() {
 

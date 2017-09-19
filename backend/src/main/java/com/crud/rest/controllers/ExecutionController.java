@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crud.rest.configuration.AppConfig;
+import com.crud.rest.configuration.CustomLogger;
 import com.crud.rest.configuration.ScheduledTasks;
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
@@ -52,7 +53,7 @@ public class ExecutionController {
 	@RequestMapping(value = "/start", method = RequestMethod.GET)
 	public void triggerAnExecution() {
 		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
-		TestExecutionSettings testExecutionSettings = suiteExecutionService.findCurrentSettings();
+		TestExecutionSettings testExecutionSettings = suiteExecutionService.getCurrentSettings();
 		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
 				testExecutionSettings.getFitnessePassword(), false);
 	}
@@ -60,7 +61,7 @@ public class ExecutionController {
 	@RequestMapping(value = "/forceStart", method = RequestMethod.GET)
 	public void triggerForcedExecution() {
 		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
-		TestExecutionSettings testExecutionSettings = suiteExecutionService.findCurrentSettings();
+		TestExecutionSettings testExecutionSettings = suiteExecutionService.getCurrentSettings();
 		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
 				testExecutionSettings.getFitnessePassword(), true);
 	}
@@ -72,15 +73,15 @@ public class ExecutionController {
 			if (suite.isRunning()) {
 				suite.setRunning(false);
 				fitnesseSuiteService.updateSuite(suite);
-				System.out.println(suite.getSuiteName() + " running status reset.");
+				CustomLogger.logInfo(suite.getSuiteName() + " running status reset.");
 			}
 		});
-		TestExecutionSettings settings = suiteExecutionService.findCurrentSettings();
+		TestExecutionSettings settings = suiteExecutionService.getCurrentSettings();
 
 		if (settings.isRunning()) {
 			settings.setRunning(false);
 			suiteExecutionService.updateTestExecutionSettings(settings);
-			System.out.println("Execution status reset.");
+			CustomLogger.logInfo("Execution status reset.");
 		}
 		return "All suites reset.";
 	}
@@ -90,6 +91,14 @@ public class ExecutionController {
 		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
 		encryptor.setPassword(AppConfig.encryptionSeed);
 		return encryptor.encrypt(value);
+
+	}
+
+	@RequestMapping(value = "/decrypt/{value}", method = RequestMethod.GET)
+	public String decryptPassword(@PathVariable String value) {
+		StandardPBEStringEncryptor encryptorDecryptor = new StandardPBEStringEncryptor();
+		encryptorDecryptor.setPassword(AppConfig.encryptionSeed);
+		return encryptorDecryptor.decrypt(value);
 
 	}
 

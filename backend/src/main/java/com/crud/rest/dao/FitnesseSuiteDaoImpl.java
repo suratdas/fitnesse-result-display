@@ -128,10 +128,7 @@ public class FitnesseSuiteDaoImpl implements FitnesseSuiteDao {
 		// Session session = sessionFactory.getCurrentSession();
 
 		// Example of calling a stored procedure
-		/*
-		 * Query query = session.createSQLQuery( "CALL getAllSuites()")
-		 * .addEntity(FitnesseSuite.class); suites = query.list();
-		 */
+		// Query query = session.createSQLQuery( "CALL getAllSuites()").addEntity(FitnesseSuite.class); suites = query.list();
 
 		// Example of calling using hibernate query
 		suites = session.createQuery("from FitnesseSuite").list();

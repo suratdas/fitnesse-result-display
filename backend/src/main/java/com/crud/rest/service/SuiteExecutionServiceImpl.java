@@ -31,6 +31,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.crud.rest.configuration.CustomLogger;
 import com.crud.rest.dao.TestCaseResultDao;
 import com.crud.rest.dao.TestExecutionSettingsDao;
 import com.crud.rest.model.AllTestResult;
@@ -98,7 +99,7 @@ public class SuiteExecutionServiceImpl {
 			BufferedReader in = new BufferedReader(inputStremReader);
 			int responseStatusCode = httpResponse.getStatusLine().getStatusCode();
 			if (responseStatusCode != 200) {
-				System.out.println(String.format("The status is returned as %d for suite %s.", responseStatusCode,
+				CustomLogger.logInfo(String.format("The status is returned as %d for suite %s.", responseStatusCode,
 						fitnesseSuite.getSuiteName()));
 				throw new Exception("Did not get the right response from server.");
 			}
@@ -120,7 +121,6 @@ public class SuiteExecutionServiceImpl {
 					collateNode = true;
 				}
 			}
-			System.out.println(oneResultNode);
 			in.close();
 		} catch (IOException | AuthenticationException e) {
 			e.printStackTrace();
@@ -186,12 +186,12 @@ public class SuiteExecutionServiceImpl {
 		return 0;
 	}
 
-	public TestExecutionSettings findCurrentSettings() {
+	public TestExecutionSettings getCurrentSettings() {
 		return testExecutionSettingsDao.getCurrentSettings();
 	}
 
-	public int findPollingIntervalInMinutes() {
-		return testExecutionSettingsDao.findPollingIntervalInMinutes();
+	public int getPollingIntervalInMinutes() {
+		return testExecutionSettingsDao.getPollingIntervalInMinutes();
 	}
 
 	public void setPollingInterval(int settings) {

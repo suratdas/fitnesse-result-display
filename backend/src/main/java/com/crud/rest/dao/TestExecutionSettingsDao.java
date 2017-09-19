@@ -8,7 +8,7 @@ public interface TestExecutionSettingsDao {
 
 	TestExecutionSettings getCurrentSettings();
 
-	int findPollingIntervalInMinutes();
+	int getPollingIntervalInMinutes();
 
 	void setPollingInterval(int settings);
 

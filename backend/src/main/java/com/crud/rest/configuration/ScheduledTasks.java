@@ -9,8 +9,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.crud.rest.model.FitnesseSuite;
@@ -21,7 +19,7 @@ import com.crud.rest.service.SuiteExecutionServiceImpl;
 //@Component
 public class ScheduledTasks {
 
-	private static final Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
+	//private static final Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
 
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -45,18 +43,18 @@ public class ScheduledTasks {
 
 	// @Scheduled(fixedRate=60000)
 	public void triggerTestExecution(String fitnesseUsername, String fitnessePassword, boolean forcedExecution) {
-		log.info("Test execution started at " + dateFormat.format(new Date()));
+		CustomLogger.logInfo("Test execution started at " + dateFormat.format(new Date()));
 
 		List<FitnesseSuite> fitnesseSuites = fitnesseSuiteService.findAllSuites();
 		fitnesseSuites.removeIf(eachSuite -> !eachSuite.getShouldRun());
 
-		//For forced execution we don't check the status of previous execution.
+		// For forced execution we don't check the status of previous execution.
 		if (!forcedExecution) {
 			// If any of the suite is already running, don't run again. Abort the whole run for all suites. We can change the logic in future.
 			isAnySuiteAlreadyRunning = false;
 			fitnesseSuites.forEach((eachSuite) -> {
 				if (eachSuite.isRunning()) {
-					System.out.println(String.format("Error: %s suite is still running. Cannot run again. Aborting.",
+					CustomLogger.logInfo(String.format("Error: %s suite is still running. Cannot run again. Aborting.",
 							eachSuite.getSuiteName()));
 					isAnySuiteAlreadyRunning = true;
 				}
@@ -66,20 +64,19 @@ public class ScheduledTasks {
 				return;
 		}
 
-		TestExecutionSettings testExecutionsettings = suiteExecutionService.findCurrentSettings();
+		TestExecutionSettings testExecutionsettings = suiteExecutionService.getCurrentSettings();
 		if (scheduledExecution) {
 			Calendar date = Calendar.getInstance();
 			long currentTime = date.getTimeInMillis();
-			//TODO Ensure that you have right value in database. Set 1440 if you want to execute every day.
 			Date afterAddingIntervalInMinutes = new Date(
 					currentTime + (testExecutionsettings.getExecutionInterval() * 60000));
 			testExecutionsettings.setNextExecutionTime(afterAddingIntervalInMinutes);
 		}
 		String decryptedFitnessePassword = null;
 		if (fitnessePassword != null && fitnessePassword.length() > 1) {
-			StandardPBEStringEncryptor decryptor = new StandardPBEStringEncryptor();
-			decryptor.setPassword(AppConfig.encryptionSeed);
-			decryptedFitnessePassword = decryptor.decrypt(fitnessePassword);
+			StandardPBEStringEncryptor encryptorDecryptor = new StandardPBEStringEncryptor();
+			encryptorDecryptor.setPassword(AppConfig.encryptionSeed);
+			decryptedFitnessePassword = encryptorDecryptor.decrypt(fitnessePassword);
 		}
 
 		testExecutionsettings.setRunning(true);
@@ -93,7 +90,7 @@ public class ScheduledTasks {
 
 		executor.shutdown();
 
-		System.out.println(String.format(new Date() + " : Running %d suites in parallel...", fitnesseSuites.size()));
+		CustomLogger.logInfo(String.format(new Date() + " : Running %d suites in parallel...", fitnesseSuites.size()));
 
 		try {
 			executor.awaitTermination(testExecutionsettings.getConnectionTimeOutInMinutes(), TimeUnit.MINUTES);
@@ -104,7 +101,7 @@ public class ScheduledTasks {
 		testExecutionsettings.setRunning(false);
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
 
-		System.out.println(new Date() + ": Execution completed. Check log file for the details.");
+		CustomLogger.logInfo(new Date() + ": Execution completed. Check log file for the details.");
 
 	}
 
@@ -129,7 +126,7 @@ public class ScheduledTasks {
 			try {
 				suiteExecutionService.executeSuite(fitnesseSuite, fitnesseUsername, fitnessePassword);
 			} catch (Exception e) {
-				System.out.println(fitnesseSuite.getSuiteName() + " threw an error.\n" + e);
+				CustomLogger.logInfo(fitnesseSuite.getSuiteName() + " threw an error.\n" + e);
 			}
 
 			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(fitnesseSuite.getSuiteId());

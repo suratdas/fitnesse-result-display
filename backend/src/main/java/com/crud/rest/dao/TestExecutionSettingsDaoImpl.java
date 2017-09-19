@@ -20,7 +20,7 @@ public class TestExecutionSettingsDaoImpl implements TestExecutionSettingsDao {
 	private SessionFactory sessionFactory;
 
 	@Override
-	public int findPollingIntervalInMinutes() {
+	public int getPollingIntervalInMinutes() {
 		Object valueToReturn = findValueFromSettings("pollingInterval");
 		//Return one day.
 		if (valueToReturn == null)
