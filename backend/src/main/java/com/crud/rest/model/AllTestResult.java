@@ -20,15 +20,19 @@ public class AllTestResult {
 	@Column
 	private long id;
 
+	//int(4) with suite value corresponds to that defined in FitnesseSuite.java
 	@Column(name = "suite_id")
 	private int suiteId;
 
+	//varchar(45)
 	@Column(name = "test_name")
 	private String testName;
 
+	//varchar(45)
 	@Column(name = "status")
 	private String status;
 
+	//datetime
 	@Column(name = "last_execution_time")
 	private Date lastExecutionTime;
 

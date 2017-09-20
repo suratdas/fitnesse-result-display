@@ -9,8 +9,8 @@ public class CustomLogger {
 
 	private static String logFilePath;
 
-	public static void setLogFilePath(String logFilePath) {
-		CustomLogger.logFilePath = logFilePath;
+	public static void setLogFilePath(String logFilePathPassed) {
+		logFilePath = logFilePathPassed;
 	}
 
 	public static void logInfo(String logStatement) {
@@ -62,7 +62,7 @@ public class CustomLogger {
 		logger.getLoggerRepository().shutdown();
 	}
 
-	public enum LoggerType {
+	private enum LoggerType {
 		Debug, Info, Warn, Error, Fatal
 	}
 

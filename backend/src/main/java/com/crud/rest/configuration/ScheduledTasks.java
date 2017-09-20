@@ -54,7 +54,7 @@ public class ScheduledTasks {
 			isAnySuiteAlreadyRunning = false;
 			fitnesseSuites.forEach((eachSuite) -> {
 				if (eachSuite.isRunning()) {
-					CustomLogger.logInfo(String.format("Error: %s suite is still running. Cannot run again. Aborting.",
+					 CustomLogger.logError(String.format("%s suite is still running. Cannot run again. Aborting.",
 							eachSuite.getSuiteName()));
 					isAnySuiteAlreadyRunning = true;
 				}

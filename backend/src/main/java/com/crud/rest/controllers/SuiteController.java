@@ -65,7 +65,7 @@ public class SuiteController {
 		if (fitnesses.isEmpty())
 			return new ResponseEntity<List<FitnesseSuite>>(HttpStatus.NO_CONTENT);
 
-		fitnesses.forEach(f -> CustomLogger.logInfo(f.getSuiteName()));
+		fitnesses.forEach(f -> CustomLogger.logInfo("In controller, suitename : " + f.getSuiteName()));
 		return new ResponseEntity<List<FitnesseSuite>>(fitnesses, HttpStatus.OK);
 	}
 

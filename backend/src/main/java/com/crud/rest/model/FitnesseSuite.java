@@ -20,33 +20,43 @@ public class FitnesseSuite {
 	@Column
 	private long id;
 
+	//int(4) with values defined as 101, 102 etc...
 	@Column(name = "suite_id")
 	private int suiteId;
 
+	//varchar(45)
 	@Column(name = "suite_name")
 	private String suiteName;
 
+	//varchar(100)
 	@Column(name = "suite_url")
 	private String suiteUrl;
 
+	//bit(1)
 	@Column(name = "should_run")
 	private boolean shouldRun;
 
+	//bit(1)
 	@Column(name = "is_running")
 	private boolean isRunning;
 
+	//int(11)
 	@Column(name = "total_tests")
 	private int totalTests;
 
+	//int(11)
 	@Column(name = "passed_tests")
 	private int passedTests;
 
+	//int(11)
 	@Column(name = "failed_tests")
 	private int failedTests;
 
+	//datetime  - can be null too.
 	@Column(name = "last_execution_time")
 	private Date lastExecutionTime;
 
+	//varchar(100)
 	@Column(name = "fitnesse_result_path")
 	private String suiteResultFolderPath;
 

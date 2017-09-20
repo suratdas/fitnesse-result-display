@@ -133,6 +133,7 @@ public class AppConfig implements SchedulingConfigurer {
 
 	@Override
 	public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+		CustomLogger.setLogFilePath(logFilePath);
 		taskRegistrar.setScheduler(taskExecutor());
 		taskRegistrar.addTriggerTask(new TriggerredTask(), new SchedulingTrigger());
 	}
@@ -155,15 +156,14 @@ public class AppConfig implements SchedulingConfigurer {
 	private class TriggerredTask implements Runnable {
 		@Override
 		public void run() {
-			CustomLogger.setLogFilePath(logFilePath);
 
-			CustomLogger.logInfo("Polling at " + new Date());
 			TestExecutionSettings testExecutionSettings = testExecutionService.getCurrentSettings();
 			Date nextExecutionTime = testExecutionSettings.getNextExecutionTime();
 
 			try {
 				if (testExecutionSettings.isRunning())
 					return;
+				CustomLogger.logInfo("Polling at " + new Date());
 				if (nextExecutionTime == null || nextExecutionTime.before(new Date())) {
 					myBean().triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
 							testExecutionSettings.getFitnessePassword(), false);
