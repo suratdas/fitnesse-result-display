@@ -79,4 +79,10 @@ public class AllTestResult {
 		super();
 	}
 
+	@Override
+	public String toString() {
+		return "AllTestResult [suiteId=" + suiteId + ", testName=" + testName + ", status=" + status
+				+ ", lastExecutionTime=" + lastExecutionTime + "]";
+	}
+
 }

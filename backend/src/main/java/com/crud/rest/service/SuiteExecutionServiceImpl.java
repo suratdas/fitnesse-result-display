@@ -74,7 +74,7 @@ public class SuiteExecutionServiceImpl {
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 
-			HttpGet httpGet = new HttpGet(fitnesseSuite.getSuiteUrl() + "?suite&format=xml");
+			HttpGet httpGet = new HttpGet(fitnesseSuite.getSuiteUrl() + "?suite&publish&format=xml");
 
 			// Authorization is not used if username is not provided (=null or empty)
 			if (fitnesseUsername != null && fitnesseUsername.trim().length() > 1) {
@@ -83,7 +83,8 @@ public class SuiteExecutionServiceImpl {
 				httpGet.addHeader(headerAuth);
 			}
 
-			String timeout = Integer.toString(testExecutionSettingsDao.getCurrentSettings().getConnectionTimeOutInMinutes() * 60);
+			String timeout = Integer
+					.toString(testExecutionSettingsDao.getCurrentSettings().getConnectionTimeOutInMinutes() * 60);
 			Header headerTimeout = new BasicHeader(HttpHeaders.TIMEOUT, timeout);
 			Header headerconnection = new BasicHeader(HttpHeaders.CONNECTION, "Keep-alive");
 
@@ -93,7 +94,6 @@ public class SuiteExecutionServiceImpl {
 			HttpResponse httpResponse = httpClient.execute(httpGet);
 			HttpEntity responseEntity = httpResponse.getEntity();
 
-			// TODO Find out if it is possible to add result to database when the execution is on.
 			InputStream inputStream = responseEntity.getContent();
 			InputStreamReader inputStremReader = new InputStreamReader(inputStream);
 			BufferedReader in = new BufferedReader(inputStremReader);
@@ -123,7 +123,7 @@ public class SuiteExecutionServiceImpl {
 			}
 			in.close();
 		} catch (IOException | AuthenticationException e) {
-			e.printStackTrace();
+			CustomLogger.logError(e.toString());
 		}
 	}
 
@@ -152,11 +152,11 @@ public class SuiteExecutionServiceImpl {
 			updateResultDatabase(suiteId, testName, assertionFailures > 0 ? "FAILED" : "PASSED");
 
 		} catch (SAXException | IOException | ParserConfigurationException | FactoryConfigurationError e) {
-			e.printStackTrace();
+			CustomLogger.logError(e.toString());
 		}
 	}
 
-	private void updateResultDatabase(int suiteId, String testName, String status) {
+	public void updateResultDatabase(int suiteId, String testName, String status) {
 		AllTestResult allTestCaseResult = testCaseResultDao.findTestCase(suiteId, testName);
 
 		if (allTestCaseResult == null) {

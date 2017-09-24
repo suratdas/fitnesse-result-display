@@ -1,5 +1,8 @@
 package com.crud.rest.configuration;
 
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -8,6 +11,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.Connection;
+import javax.jms.Destination;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,6 +26,8 @@ import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
 import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 //@Component
 public class ScheduledTasks {
@@ -54,7 +67,7 @@ public class ScheduledTasks {
 			isAnySuiteAlreadyRunning = false;
 			fitnesseSuites.forEach((eachSuite) -> {
 				if (eachSuite.isRunning()) {
-					 CustomLogger.logError(String.format("%s suite is still running. Cannot run again. Aborting.",
+					CustomLogger.logError(String.format("%s suite is still running. Cannot run again. Aborting.",
 							eachSuite.getSuiteName()));
 					isAnySuiteAlreadyRunning = true;
 				}
@@ -82,7 +95,8 @@ public class ScheduledTasks {
 		testExecutionsettings.setRunning(true);
 
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
-
+		Thread queueThread = new Thread(new JMSQueueListener(fitnesseSuites));
+		queueThread.start();
 		ExecutorService executor = Executors.newFixedThreadPool(testExecutionsettings.getNumberOfExecutionThread());
 
 		for (FitnesseSuite fitnesseSuite : fitnesseSuites)
@@ -102,10 +116,91 @@ public class ScheduledTasks {
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
 
 		CustomLogger.logInfo(new Date() + ": Execution completed. Check log file for the details.");
-
 	}
 
-	public class TestExecution implements Runnable {
+	//It uses ActiveMQ server
+	private class JMSQueueListener implements Runnable {
+		private List<FitnesseSuite> fitnesseSuites;
+		FitnesseSuite matchingSuite;
+
+		public JMSQueueListener(List<FitnesseSuite> fitnesseSuites) {
+			this.fitnesseSuites = fitnesseSuites;
+		}
+
+		@Override
+		public void run() {
+			try {
+				TestExecutionSettings testExecutionsettings = suiteExecutionService.getCurrentSettings();
+				CustomLogger.logInfo("Listening to the queue...");
+				ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
+						testExecutionsettings.getMessageBrokerAddress());
+				Connection connection = connectionFactory.createConnection();
+				connection.start();
+				Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+				Destination destination = session.createQueue(testExecutionsettings.getMessageQueueName());
+				MessageConsumer consumer = session.createConsumer(destination);
+				
+				while (testExecutionsettings.isRunning()) {
+					Message message = consumer.receive(60000);
+
+					if (message instanceof TextMessage) {
+						TextMessage textMessage = (TextMessage) message;
+						String text = textMessage.getText();
+						System.out.println("Received message: " + text);
+						JsonNode rootNode = new ObjectMapper().readTree(new StringReader(text));
+						int right = rootNode.get("right").asInt();
+						int wrong = rootNode.get("wrong").asInt();
+						int ignores = rootNode.get("ignores").asInt();
+						int exceptions = rootNode.get("exceptions").asInt();
+						String testName = rootNode.get("testName").asText();
+						String testPath = rootNode.get("testPath").asText();
+
+						fitnesseSuites.forEach((suite) -> {
+							try {
+								String fullUrlString = suite.getSuiteUrl();
+								URL urlConvertedToURLVariable = new URL(fullUrlString);
+								String theFitnessePathFromDatabase = urlConvertedToURLVariable.getPath().replaceAll("/",
+										"");
+
+								if (testPath.contains(theFitnessePathFromDatabase)) {
+									matchingSuite = suite;
+									return;
+								}
+							} catch (MalformedURLException e) {
+								CustomLogger.logError(e.toString());
+							}
+						});
+
+						int assertionFailures = 0;
+						if (right > 0)
+							assertionFailures = wrong + exceptions;
+						else
+							assertionFailures = wrong + ignores + exceptions;
+						
+						if (testExecutionsettings.isQueuePolling())
+							suiteExecutionService.updateResultDatabase(matchingSuite.getSuiteId(), testName,
+									assertionFailures > 0 ? "FAILED" : "PASSED");
+
+						CustomLogger.logInfo(text);
+					} else
+						CustomLogger.logInfo(
+								"Either there was no message in the queue or the message cannot be converted to text.");
+					testExecutionsettings = suiteExecutionService.getCurrentSettings();
+				}
+				CustomLogger.logInfo("Stopped listening to the queue.");
+				consumer.close();
+				session.close();
+				connection.close();
+			} catch (Exception e) {
+				CustomLogger.logError(e.toString());
+			} finally {
+
+			}
+		}
+	}
+
+	private class TestExecution implements Runnable {
 
 		private FitnesseSuite fitnesseSuite;
 		private String fitnesseUsername;

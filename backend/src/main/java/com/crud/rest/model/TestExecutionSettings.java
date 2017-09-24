@@ -49,6 +49,18 @@ public class TestExecutionSettings {
 	@Column(name = "is_running")
 	private boolean isRunning;
 
+	//varchar(45) => tcp://<servername>:61616
+	@Column(name = "message_broker_address")
+	private String messageBrokerAddress;
+
+	//varchar(45) => FitnesseExecution.TESTQ
+	@Column(name = "queue_name")
+	private String messageQueueName;
+
+	//bit(1)
+	@Column(name = "queue_polling")
+	private boolean isQueuePolling;
+
 	public int getNumberOfExecutionThread() {
 		return numberOfExecutionThread;
 	}
@@ -111,6 +123,30 @@ public class TestExecutionSettings {
 
 	public void setRunning(boolean isRunning) {
 		this.isRunning = isRunning;
+	}
+
+	public String getMessageBrokerAddress() {
+		return messageBrokerAddress;
+	}
+
+	public void setMessageBrokerAddress(String messageBrokerAddress) {
+		this.messageBrokerAddress = messageBrokerAddress;
+	}
+
+	public String getMessageQueueName() {
+		return messageQueueName;
+	}
+
+	public void setMessageQueueName(String messageQueueName) {
+		this.messageQueueName = messageQueueName;
+	}
+
+	public boolean isQueuePolling() {
+		return isQueuePolling;
+	}
+
+	public void setQueuePolling(boolean isQueuePolling) {
+		this.isQueuePolling = isQueuePolling;
 	}
 
 }
