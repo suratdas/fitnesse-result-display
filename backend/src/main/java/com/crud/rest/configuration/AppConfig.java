@@ -62,6 +62,9 @@ public class AppConfig implements SchedulingConfigurer {
 
 	@Value("${logFilePath}")
 	private String logFilePath;
+	
+	@Value("${resultPublishServerAddress}")
+	private String resultPublishServerAddress;
 
 	@Bean
 	public static PropertyPlaceholderConfigurer properties() {
@@ -120,7 +123,7 @@ public class AppConfig implements SchedulingConfigurer {
 
 	@Bean
 	public ScheduledTasks myBean() {
-		return new ScheduledTasks();
+		return new ScheduledTasks(resultPublishServerAddress);
 	}
 
 	@Bean(destroyMethod = "shutdown")

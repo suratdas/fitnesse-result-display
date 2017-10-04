@@ -1,8 +1,13 @@
 package com.crud.rest.configuration;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -11,14 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -28,6 +25,8 @@ import com.crud.rest.service.FitnesseSuiteService;
 import com.crud.rest.service.SuiteExecutionServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import fitnesse.components.RMIInterface;
 
 //@Component
 public class ScheduledTasks {
@@ -44,6 +43,8 @@ public class ScheduledTasks {
 
 	private boolean isAnySuiteAlreadyRunning, scheduledExecution = true;
 
+	private String resultPublishServerAddress;
+
 	public ScheduledTasks(SuiteExecutionServiceImpl suiteExecutionService, FitnesseSuiteService fitnesseSuiteService,
 			boolean scheduledExecution) {
 		this.suiteExecutionService = suiteExecutionService;
@@ -51,7 +52,8 @@ public class ScheduledTasks {
 		this.scheduledExecution = scheduledExecution;
 	}
 
-	public ScheduledTasks() {
+	public ScheduledTasks(String resultPublishServerAddress) {
+		this.resultPublishServerAddress = resultPublishServerAddress;
 	}
 
 	// @Scheduled(fixedRate=60000)
@@ -93,10 +95,17 @@ public class ScheduledTasks {
 		}
 
 		testExecutionsettings.setRunning(true);
-
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
-		Thread queueThread = new Thread(new JMSQueueListener(fitnesseSuites));
-		queueThread.start();
+
+		CustomLogger.logInfo("Starting intermediate result listener thread...");
+		try {
+			Thread rmiThread = new Thread(new RMIListener(fitnesseSuites));
+			rmiThread.start();
+		} catch (RemoteException e1) {
+			e1.printStackTrace();
+		}
+		CustomLogger.logInfo("Intermediate result listener thread started...");
+
 		ExecutorService executor = Executors.newFixedThreadPool(testExecutionsettings.getNumberOfExecutionThread());
 
 		for (FitnesseSuite fitnesseSuite : fitnesseSuites)
@@ -115,89 +124,82 @@ public class ScheduledTasks {
 		testExecutionsettings.setRunning(false);
 		suiteExecutionService.updateTestExecutionSettings(testExecutionsettings);
 
+		try {
+			Naming.unbind(resultPublishServerAddress);
+		} catch (RemoteException | MalformedURLException | NotBoundException e) {
+			e.printStackTrace();
+		}
+
 		CustomLogger.logInfo(new Date() + ": Execution completed. Check log file for the details.");
 	}
 
-	//It uses ActiveMQ server
-	private class JMSQueueListener implements Runnable {
+	private class RMIListener extends UnicastRemoteObject implements RMIInterface, Runnable {
 		private List<FitnesseSuite> fitnesseSuites;
 		FitnesseSuite matchingSuite;
 
-		public JMSQueueListener(List<FitnesseSuite> fitnesseSuites) {
+		private static final long serialVersionUID = 1L;
+
+		public RMIListener(List<FitnesseSuite> fitnesseSuites) throws RemoteException {
+			super();
 			this.fitnesseSuites = fitnesseSuites;
+		}
+
+		public String publish(String text) throws RemoteException {
+
+			JsonNode rootNode = null;
+			try {
+				rootNode = new ObjectMapper().readTree(new StringReader(text));
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			int right = rootNode.get("right").asInt();
+			int wrong = rootNode.get("wrong").asInt();
+			int ignores = rootNode.get("ignores").asInt();
+			int exceptions = rootNode.get("exceptions").asInt();
+			String testName = rootNode.get("testName").asText();
+			String testPath = rootNode.get("testPath").asText();
+
+			fitnesseSuites.forEach((suite) -> {
+				try {
+					String fullUrlString = suite.getSuiteUrl();
+					URL urlConvertedToURLVariable = new URL(fullUrlString);
+					String theFitnessePathFromDatabase = urlConvertedToURLVariable.getPath().replaceAll("/", "");
+
+					if (testPath.contains(theFitnessePathFromDatabase)) {
+						matchingSuite = suite;
+						return;
+					}
+				} catch (MalformedURLException e) {
+					CustomLogger.logError(e.toString());
+				}
+			});
+
+			int assertionFailures = 0;
+			if (right > 0)
+				assertionFailures = wrong + exceptions;
+			else
+				assertionFailures = wrong + ignores + exceptions;
+
+			TestExecutionSettings testExecutionsettings = suiteExecutionService.getCurrentSettings();
+			if (testExecutionsettings.isQueuePolling())
+				suiteExecutionService.updateResultDatabase(matchingSuite.getSuiteId(), testName,
+						assertionFailures > 0 ? "FAILED" : "PASSED");
+
+			CustomLogger.logInfo(text);
+			return text;
 		}
 
 		@Override
 		public void run() {
 			try {
-				TestExecutionSettings testExecutionsettings = suiteExecutionService.getCurrentSettings();
-				CustomLogger.logInfo("Listening to the queue...");
-				ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-						testExecutionsettings.getMessageBrokerAddress());
-				Connection connection = connectionFactory.createConnection();
-				connection.start();
-				Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-				Destination destination = session.createQueue(testExecutionsettings.getMessageQueueName());
-				MessageConsumer consumer = session.createConsumer(destination);
-				
-				while (testExecutionsettings.isRunning()) {
-					Message message = consumer.receive(60000);
-
-					if (message instanceof TextMessage) {
-						TextMessage textMessage = (TextMessage) message;
-						String text = textMessage.getText();
-						System.out.println("Received message: " + text);
-						JsonNode rootNode = new ObjectMapper().readTree(new StringReader(text));
-						int right = rootNode.get("right").asInt();
-						int wrong = rootNode.get("wrong").asInt();
-						int ignores = rootNode.get("ignores").asInt();
-						int exceptions = rootNode.get("exceptions").asInt();
-						String testName = rootNode.get("testName").asText();
-						String testPath = rootNode.get("testPath").asText();
-
-						fitnesseSuites.forEach((suite) -> {
-							try {
-								String fullUrlString = suite.getSuiteUrl();
-								URL urlConvertedToURLVariable = new URL(fullUrlString);
-								String theFitnessePathFromDatabase = urlConvertedToURLVariable.getPath().replaceAll("/",
-										"");
-
-								if (testPath.contains(theFitnessePathFromDatabase)) {
-									matchingSuite = suite;
-									return;
-								}
-							} catch (MalformedURLException e) {
-								CustomLogger.logError(e.toString());
-							}
-						});
-
-						int assertionFailures = 0;
-						if (right > 0)
-							assertionFailures = wrong + exceptions;
-						else
-							assertionFailures = wrong + ignores + exceptions;
-						
-						if (testExecutionsettings.isQueuePolling())
-							suiteExecutionService.updateResultDatabase(matchingSuite.getSuiteId(), testName,
-									assertionFailures > 0 ? "FAILED" : "PASSED");
-
-						CustomLogger.logInfo(text);
-					} else
-						CustomLogger.logInfo(
-								"Either there was no message in the queue or the message cannot be converted to text.");
-					testExecutionsettings = suiteExecutionService.getCurrentSettings();
-				}
-				CustomLogger.logInfo("Stopped listening to the queue.");
-				consumer.close();
-				session.close();
-				connection.close();
+				Naming.bind(resultPublishServerAddress, new RMIListener(fitnesseSuites));
+				CustomLogger.logInfo("Result publisher is ready.");
 			} catch (Exception e) {
-				CustomLogger.logError(e.toString());
-			} finally {
-
+				CustomLogger.logInfo("Result Publisher server exception: " + e.toString());
+				e.printStackTrace();
 			}
 		}
+
 	}
 
 	private class TestExecution implements Runnable {

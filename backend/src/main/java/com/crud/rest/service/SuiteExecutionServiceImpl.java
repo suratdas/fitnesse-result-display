@@ -163,7 +163,7 @@ public class SuiteExecutionServiceImpl {
 			allTestCaseResult = new AllTestResult(suiteId, testName, status);
 			allTestCaseResult.setLastExecutionTime(new Date(System.currentTimeMillis()));
 			testCaseResultDao.createTestCaseResult(allTestCaseResult);
-		} else {
+		} else if (allTestCaseResult.getStatus() == null || allTestCaseResult.getStatus().trim().length() == 0) {
 			allTestCaseResult.setStatus(status);
 			allTestCaseResult.setLastExecutionTime(new Date(System.currentTimeMillis()));
 			testCaseResultDao.updateTestCaseResult(allTestCaseResult);
