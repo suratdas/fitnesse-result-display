@@ -62,7 +62,7 @@ public class AppConfig implements SchedulingConfigurer {
 
 	@Value("${logFilePath}")
 	private String logFilePath;
-	
+
 	@Value("${resultPublishServerAddress}")
 	private String resultPublishServerAddress;
 
@@ -121,7 +121,7 @@ public class AppConfig implements SchedulingConfigurer {
 		return transactionManager;
 	}
 
-	@Bean
+	@Bean(name = "scheduledTasks")
 	public ScheduledTasks myBean() {
 		return new ScheduledTasks(resultPublishServerAddress);
 	}

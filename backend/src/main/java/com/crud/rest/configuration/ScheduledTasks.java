@@ -45,13 +45,6 @@ public class ScheduledTasks {
 
 	private String resultPublishServerAddress;
 
-	public ScheduledTasks(SuiteExecutionServiceImpl suiteExecutionService, FitnesseSuiteService fitnesseSuiteService,
-			boolean scheduledExecution) {
-		this.suiteExecutionService = suiteExecutionService;
-		this.fitnesseSuiteService = fitnesseSuiteService;
-		this.scheduledExecution = scheduledExecution;
-	}
-
 	public ScheduledTasks(String resultPublishServerAddress) {
 		this.resultPublishServerAddress = resultPublishServerAddress;
 	}
@@ -63,9 +56,8 @@ public class ScheduledTasks {
 		List<FitnesseSuite> fitnesseSuites = fitnesseSuiteService.findAllSuites();
 		fitnesseSuites.removeIf(eachSuite -> !eachSuite.getShouldRun());
 
-		// For forced execution we don't check the status of previous execution.
+		// For forced execution, let's not check whether it's still running from previous execution.
 		if (!forcedExecution) {
-			// If any of the suite is already running, don't run again. Abort the whole run for all suites. We can change the logic in future.
 			isAnySuiteAlreadyRunning = false;
 			fitnesseSuites.forEach((eachSuite) -> {
 				if (eachSuite.isRunning()) {
@@ -74,7 +66,7 @@ public class ScheduledTasks {
 					isAnySuiteAlreadyRunning = true;
 				}
 			});
-
+			// If any of the suite is already running, return without running any suite. We can change the logic in future.
 			if (isAnySuiteAlreadyRunning)
 				return;
 		}
@@ -101,10 +93,10 @@ public class ScheduledTasks {
 		try {
 			Thread rmiThread = new Thread(new RMIListener(fitnesseSuites));
 			rmiThread.start();
-		} catch (RemoteException e1) {
-			e1.printStackTrace();
+			CustomLogger.logInfo("Intermediate result listener thread started...");
+		} catch (RemoteException ex) {
+			CustomLogger.logError(ex.toString());
 		}
-		CustomLogger.logInfo("Intermediate result listener thread started...");
 
 		ExecutorService executor = Executors.newFixedThreadPool(testExecutionsettings.getNumberOfExecutionThread());
 
@@ -117,8 +109,8 @@ public class ScheduledTasks {
 
 		try {
 			executor.awaitTermination(testExecutionsettings.getConnectionTimeOutInMinutes(), TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (InterruptedException ex) {
+			CustomLogger.logError(ex.toString());
 		}
 
 		testExecutionsettings.setRunning(false);
@@ -126,8 +118,8 @@ public class ScheduledTasks {
 
 		try {
 			Naming.unbind(resultPublishServerAddress);
-		} catch (RemoteException | MalformedURLException | NotBoundException e) {
-			e.printStackTrace();
+		} catch (RemoteException | MalformedURLException | NotBoundException ex) {
+			CustomLogger.logError(ex.toString());
 		}
 
 		CustomLogger.logInfo(new Date() + ": Execution completed. Check log file for the details.");
@@ -149,8 +141,8 @@ public class ScheduledTasks {
 			JsonNode rootNode = null;
 			try {
 				rootNode = new ObjectMapper().readTree(new StringReader(text));
-			} catch (IOException e1) {
-				e1.printStackTrace();
+			} catch (IOException ex) {
+				CustomLogger.logError(ex.toString());
 			}
 			int right = rootNode.get("right").asInt();
 			int wrong = rootNode.get("wrong").asInt();
@@ -169,8 +161,8 @@ public class ScheduledTasks {
 						matchingSuite = suite;
 						return;
 					}
-				} catch (MalformedURLException e) {
-					CustomLogger.logError(e.toString());
+				} catch (MalformedURLException ex) {
+					CustomLogger.logError(ex.toString());
 				}
 			});
 
@@ -185,7 +177,7 @@ public class ScheduledTasks {
 				suiteExecutionService.updateResultDatabase(matchingSuite.getSuiteId(), testName,
 						assertionFailures > 0 ? "FAILED" : "PASSED");
 
-			CustomLogger.logInfo(text);
+			CustomLogger.logInfo("Intermediate test result received: " + text);
 			return text;
 		}
 
@@ -193,10 +185,11 @@ public class ScheduledTasks {
 		public void run() {
 			try {
 				Naming.bind(resultPublishServerAddress, new RMIListener(fitnesseSuites));
-				CustomLogger.logInfo("Result publisher is ready.");
-			} catch (Exception e) {
-				CustomLogger.logInfo("Result Publisher server exception: " + e.toString());
-				e.printStackTrace();
+				CustomLogger.logInfo("Result publisher is ready at " + resultPublishServerAddress);
+			} catch (Exception ex) {
+				CustomLogger.logError(String.format(
+						"Result Publisher could not be started at the server address: %s. The exception is : %s",
+						resultPublishServerAddress, ex));
 			}
 		}
 
@@ -222,8 +215,8 @@ public class ScheduledTasks {
 
 			try {
 				suiteExecutionService.executeSuite(fitnesseSuite, fitnesseUsername, fitnessePassword);
-			} catch (Exception e) {
-				CustomLogger.logInfo(fitnesseSuite.getSuiteName() + " threw an error.\n" + e);
+			} catch (Exception ex) {
+				CustomLogger.logInfo(fitnesseSuite.getSuiteName() + " threw an error.\n" + ex);
 			}
 
 			int passedTestCount = suiteExecutionService.getPassedTestCaseCount(fitnesseSuite.getSuiteId());

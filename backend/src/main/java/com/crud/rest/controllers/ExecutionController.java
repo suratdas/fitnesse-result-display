@@ -1,6 +1,5 @@
 package com.crud.rest.controllers;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -11,10 +10,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.ContextLoader;
 
 import com.crud.rest.configuration.AppConfig;
 import com.crud.rest.configuration.CustomLogger;
-import com.crud.rest.configuration.ScheduledTasks;
 import com.crud.rest.model.FitnesseSuite;
 import com.crud.rest.model.TestExecutionSettings;
 import com.crud.rest.service.FitnesseSuiteService;
@@ -38,32 +37,35 @@ public class ExecutionController {
 
 	@RequestMapping(value = "/changeExecutionTime/{nextExecutionTime}", method = RequestMethod.GET)
 	public String changeExecutionTime(@PathVariable("nextExecutionTime") String nextExecutionTime) {
-		if (nextExecutionTime.length() < 0)
-			return "Please send the request in the format : 2017-09-11%2017:16:45";
 		try {
+			if (nextExecutionTime.length() < 0)
+				throw new Exception();
 			Date nextExecutionTimeInDateFormat;
 			nextExecutionTimeInDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(nextExecutionTime);
 			suiteExecutionService.setNextExecutionTime(nextExecutionTimeInDateFormat);
 			return "Changed to " + nextExecutionTime + ".";
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			return "Please send the request in the format : 2017-09-11%2022:16:45";
 		}
 	}
 
 	@RequestMapping(value = "/start", method = RequestMethod.GET)
-	public void triggerAnExecution() {
-		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
-		TestExecutionSettings testExecutionSettings = suiteExecutionService.getCurrentSettings();
-		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
-				testExecutionSettings.getFitnessePassword(), false);
+	public String triggerAnExecution() {
+		return triggerExecution(false);
 	}
 
 	@RequestMapping(value = "/forceStart", method = RequestMethod.GET)
-	public void triggerForcedExecution() {
-		ScheduledTasks execution = new ScheduledTasks(suiteExecutionService, fitnesseSuiteService, false);
+	public String triggerForcedExecution() {
+		return triggerExecution(true);
+	}
+
+	private String triggerExecution(boolean forcedExecution) {
+		//AppConfig config = appContext.getBean(AppConfig.class); //To use this, we have to "Autowire" private ApplicationContext appContext;
+		AppConfig config = ContextLoader.getCurrentWebApplicationContext().getBean(AppConfig.class);
 		TestExecutionSettings testExecutionSettings = suiteExecutionService.getCurrentSettings();
-		execution.triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
-				testExecutionSettings.getFitnessePassword(), true);
+		config.myBean().triggerTestExecution(testExecutionSettings.getFitnesseUserName(),
+				testExecutionSettings.getFitnessePassword(), forcedExecution);
+		return "Execution done";
 	}
 
 	@RequestMapping(value = "/resetRunningStatusForAllSuites", method = RequestMethod.GET)
