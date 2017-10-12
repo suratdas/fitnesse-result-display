@@ -1,14 +1,16 @@
-import { Angular2SeedFinalPage } from './app.po';
+import { FrontendPage } from './app.po';
 
-describe('angular2-seed-final App', function() {
-  let page: Angular2SeedFinalPage;
+describe('frontend App', () => {
+  let page: FrontendPage;
 
   beforeEach(() => {
-    page = new Angular2SeedFinalPage();
+    page = new FrontendPage();
   });
 
-  it('should display message saying app works', () => {
+  it('should display welcome message', done => {
     page.navigateTo();
-    expect(page.getParagraphText()).toEqual('app works!');
+    page.getParagraphText()
+      .then(msg => expect(msg).toEqual('Welcome to app!!'))
+      .then(done, done.fail);
   });
 });
